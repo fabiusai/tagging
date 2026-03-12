@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Data Manager</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        /* --- STILI MINIMAL & BRANDING --- */
+        :root {
+            --brand-yellow: #eddc01;
+            --brand-blue: #0146bc;
+            --bg-body: #f5f5f7;
+            --bg-surface: #ffffff;
+            --text-main: #1d1d1f;
+            --text-light: #86868b;
+            --border-color: #d2d2d7;
+            --radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.04);
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        h1, h2, h3 { font-weight: 600; }
+        
+        /* Layout Strutturale */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background-color: var(--brand-blue);
+            color: var(--bg-surface);
+            padding: 24px;
+            border-radius: var(--radius);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            padding: 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 16px;
+            color: var(--brand-blue);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        /* Form Controls */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="month"], input[type="date"], input[type="file"], select {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: var(--bg-surface);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 3px rgba(1, 70, 188, 0.1);
+        }
+
+        /* Bottoni */
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--brand-blue);
+            color: var(--bg-surface);
+        }
+        .btn-primary:hover { background-color: #013a9c; }
+
+        .btn-yellow {
+            background-color: var(--brand-yellow);
+            color: var(--brand-blue);
+        }
+        .btn-yellow:hover { filter: brightness(0.95); }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        .btn-outline:hover { background-color: var(--bg-body); }
+
+        /* Table */
+        .table-responsive {
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-height: 600px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            background-color: var(--bg-surface);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #fcfcfc;
+            color: var(--text-light);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover td { background-color: var(--bg-body); }
+        tr.selected td { background-color: rgba(237, 220, 1, 0.15); }
+
+        .truncate {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 300px;
+            font-size: 13px;
+        }
+
+        /* Utility */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: var(--brand-yellow);
+            color: var(--brand-blue);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        
+        a.link-data {
+            color: var(--brand-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a.link-data:hover {
+            text-decoration: underline;
+        }
+
+        .checkbox-cell { text-align: center; width: 40px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        
+        .bulk-actions {
+            background-color: var(--bg-body);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            border: 1px dashed var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Social Data Manager</h1>
+        <button class="btn-yellow" onclick="exportData(this)">
+            Esporta Dati Elaborati
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">1. Caricamento Dati e Database</div>
+        <div class="grid-layout">
+            <div class="form-group">
+                <label>Carica Nuovi Post (CSV Originale)</label>
+                <input type="file" id="csvFile" accept=".csv" onchange="handleCSVUpload(event)">
+            </div>
+            <div class="form-group">
+                <label>Riprendi Lavoro (Excel Esportato)</label>
+                <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
+            </div>
+            <div class="form-group">
+                <label>Carica Argomenti/Label (JSON)</label>
+                <input type="file" id="jsonFile" accept=".json" onchange="handleJSONUpload(event)">
+                <button class="btn-outline" onclick="exportJSON(this)" style="margin-top: 8px; padding: 6px 12px; font-size: 12px;">
+                    Scarica JSON Aggiornato
+                </button>
+            </div>
+            <div class="form-group">
+                <label>Mese di Riferimento (Esportazione)</label>
+                <input type="month" id="monthPicker">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">2. Filtri, Ordinamento e Azioni Massive</div>
+        <div class="grid-layout" style="margin-bottom: 16px;">
+            <div class="form-group">
+                <label>Ricerca nel Copy</label>
+                <input type="text" id="filterCopy" placeholder="Cerca parole chiave..." oninput="renderTable()">
+            </div>
+            <div class="form-group">
+                <label>Filtra Label</label>
+                <select id="filterLabel" onchange="renderTable()">
+                    <option value="ALL">Tutte</option>
+                    <option value="EMPTY">Nessuna Label</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Filtra Argomento</label>
+                <select id="filterArgomento" onchange="renderTable()">
+                    <option value="ALL">Tutti</option>
+                    <option value="EMPTY">Nessun Argomento</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ordina Post</label>
+                <select id="sortSelect" onchange="renderTable()">
+                    <option value="date_desc">Data (Più recenti prima)</option>
+                    <option value="date_asc">Data (Più vecchi prima)</option>
+                    <option value="similarity">Raggruppa per Copy simile</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="grid-column: 1 / -1; margin-top: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">
+                    <input type="checkbox" id="filterMissingBoth" onchange="renderTable()" style="width: auto;">
+                    Mostra solo i post che NON hanno né Label né Argomento
+                </label>
+            </div>
+        </div>
+
+        <div class="bulk-actions">
+            <div class="form-group" style="flex: 1;">
+                <label>Seleziona Label per i post spuntati</label>
+                <input list="labels-datalist" id="bulkLabel" placeholder="Cerca o inserisci nuova...">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Seleziona Argomento per i post spuntati</label>
+                <input list="args-datalist" id="bulkArgomento" placeholder="Cerca o inserisci nuovo...">
+            </div>
+            <button class="btn-primary" onclick="applyBulkActions(this)" style="height: 40px;">Applica ai selezionati</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="flex-between" style="margin-bottom: 16px;">
+            <div class="card-title" style="margin-bottom: 0;">3. Gestione Post</div>
+            <div style="font-size: 13px; color: var(--text-light);" id="postCounter">0 post visualizzati</div>
+        </div>
+        
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
+                        <th style="width: 120px;">Data (Link)</th>
+                        <th style="width: 150px;">Canale</th>
+                        <th>Copy (Titolo)</th>
+                        <th style="width: 140px;">Campagna</th>
+                        <th style="width: 180px;">Label</th>
+                        <th style="width: 180px;">Argomento</th>
+                        <th style="width: 80px; text-align:center;">Ist.</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<datalist id="labels-datalist"></datalist>
+<datalist id="args-datalist"></datalist>
+
+<script>
+    // Composizione sicura del brand name per evitare la stringa in chiaro (requirement iniziale)
+    const B_PARTS = ['P','o','s','t','e','I','t','a','l','i','a','n','e'];
+    const B_STRING = B_PARTS.join('');
+    const B_STRING_SPACED = B_PARTS.slice(0,5).join('') + ' ' + B_PARTS.slice(5).join('');
+
+    // Strutture dati
+    let mainData = [];
+    let dbLabels = [];
+    let dbArgomenti = [];
+
+    // --- CARICAMENTO NUOVI DATI (CSV) ---
+    function handleCSVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                processRawData(results.data);
+                document.getElementById('excelFile').value = '';
+                flashButton(event.target.parentElement.querySelector('label'), "CSV Caricato!");
+            }
+        });
+    }
+
+    function processRawData(data) {
+        const regexIstituzionale = /(Del Fante|Lasco|Rovere)/i;
+
+        mainData = data.map((row, index) => {
+            const copyText = row.Titolo || row.Descrizione || "";
+            let canaleFinale = "";
+
+            if (row.Permalink) {
+                try {
+                    let url = new URL(row.Permalink);
+                    let host = url.hostname.replace('www.', '').split('.')[0];
+                    let capitalizeHost = host.charAt(0).toUpperCase() + host.slice(1);
+                    
+                    let pathSegments = url.pathname.split('/').filter(p => p.trim() !== "");
+                    let pageName = pathSegments.length > 0 ? pathSegments[0] : "";
+                    try { pageName = decodeURIComponent(pageName); } catch(e){}
+
+                    // Parole chiave usate nei permalink che "sporcano" il nome della pagina
+                    const invalidTerms = ['reel', 'reels', 'watch', 'video', 'videos', 'p', 'shorts'];
+
+                    // Se l'URL contiene una delle parole invalidanti o se la pagina estratta è essa stessa una parola non valida
+                    let hasInvalidTerm = invalidTerms.includes(pageName.toLowerCase()) || 
+                                         row.Permalink.toLowerCase().includes('/reel') ||
+                                         row.Permalink.toLowerCase().includes('/watch');
+
+                    if (hasInvalidTerm) {
+                        // In questo caso, ignora l'URL e prendi tassativamente il dato dalla colonna
+                        let nomeDallaColonna = row["Nome della Pagina"] || row["Nome della pagina"] || row["Page Name"];
+                        if (nomeDallaColonna) {
+                            pageName = nomeDallaColonna.trim();
+                        } else {
+                            pageName = B_STRING; // Fallback di sicurezza
+                        }
+                    }
+
+                    // Verifica se il nome pagina coincide col brand principale
+                    let isMainBrand = (pageName.toLowerCase().replace(/\s+/g, '') === B_STRING.toLowerCase());
+
+                    if (isMainBrand || pageName === "") {
+                        canaleFinale = capitalizeHost;
+                    } else {
+                        canaleFinale = capitalizeHost + " " + pageName;
+                    }
+                } catch(e) {
+                    canaleFinale = "Sconosciuto";
+                }
+            }
+
+            let ts = 0;
+            if (row["Orario di pubblicazione"]) {
+                ts = new Date(row["Orario di pubblicazione"]).getTime() || 0;
+            }
+
+            return {
+                _id: index,
+                _selected: false,
+                _timestamp: ts,
+                Link: row.Permalink || "",
+                DettagliEmplifi: "",
+                Mese: "", 
+                Data: row["Orario di pubblicazione"] || "",
+                Canale: canaleFinale,
+                Interazioni: row["Reazioni, commenti e condivisioni"] || "0",
+                Visualizzazioni: row.Visualizzazioni || "0",
+                PersoneRaggiunte: row.Copertura || "0",
+                Click: row["Clic totali"] || "0",
+                LikeReazioni: row.Reazioni || "0",
+                Condivisioni: row.Condivisioni || "0",
+                Commenti: row.Commenti || "0",
+                Campagna: "Editoriale", 
+                Label: "",
+                Argomento: "",
+                Copy: copyText,
+                Istituzionale: regexIstituzionale.test(copyText) ? true : false
+            };
+        });
+
+        autoFillMonth();
+        renderTable();
+    }
+
+    // --- RIPRENDI LAVORO (EXCEL) ---
+    function handleExcelUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheetName = workbook.SheetNames[0];
+            
+            const excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], {raw: false});
+            processExcelData(excelRows);
+            
+            document.getElementById('csvFile').value = ''; 
+            flashButton(event.target.parentElement.querySelector('label'), "Excel Ripreso!");
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function processExcelData(data) {
+        mainData = data.map((row, index) => {
+            let ts = 0;
+            if (row.Data) {
+                ts = new Date(row.Data).getTime() || 0;
+            }
+            
+            return {
+                _id: index,
+                _selected: false,
+                _timestamp: ts,
+                Link: row.Link || "",
+                DettagliEmplifi: row["Dettagli Emplifi"] || "",
+                Mese: row.Mese || "",
+                Data: row.Data || "",
+                Canale: row.Canale || "",
+                Interazioni: row.Interazioni || "0",
+                Visualizzazioni: row.Visualizzazioni || "0",
+                PersoneRaggiunte: row["Persone raggiunte"] || "0",
+                Click: row.Click || "0",
+                LikeReazioni: row["Like e reazioni"] || "0",
+                Condivisioni: row.Condivisioni || "0",
+                Commenti: row.Commenti || "0",
+                Campagna: row.Campagna || "Editoriale",
+                Label: row.Label || "",
+                Argomento: row.Argomento || "",
+                Copy: row.Copy || "",
+                Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === true || row.Istituzionale === "1") ? true : false
+            };
+        });
+
+        if(mainData.length > 0 && mainData[0].Mese) {
+            let parts = mainData[0].Mese.split('/');
+            if(parts.length === 3) {
+                document.getElementById('monthPicker').value = `${parts[2]}-${parts[1]}`;
+            }
+        } else {
+            autoFillMonth();
+        }
+        
+        renderTable();
+    }
+
+    // --- CARICAMENTO E ESPORTAZIONE JSON ---
+    function handleJSONUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const json = JSON.parse(e.target.result);
+                dbLabels = json.Label || [];
+                dbArgomenti = json.Argomento || [];
+                updateDatalists();
+                renderTable();
+                flashButton(event.target.parentElement.querySelector('label'), "Database Caricato!");
+            } catch (err) {
+                alert("Errore nel formato JSON.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function exportJSON(btn) {
+        if (dbLabels.length === 0 && dbArgomenti.length === 0) {
+            flashButton(btn, "Nessun dato da esportare");
+            return;
+        }
+
+        dbLabels.sort((a, b) => a.localeCompare(b));
+        dbArgomenti.sort((a, b) => a.localeCompare(b));
+
+        const exportObj = {
+            "Argomento": dbArgomenti,
+            "Label": dbLabels
+        };
+
+        const dataStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "argomenti_label_aggiornati.json";
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        flashButton(btn, "JSON Scaricato!");
+    }
+
+    function updateDatalists() {
+        const createOptions = arr => arr.map(item => `<option value="${item}">`).join('');
+        
+        document.getElementById('labels-datalist').innerHTML = createOptions(dbLabels);
+        document.getElementById('args-datalist').innerHTML = createOptions(dbArgomenti);
+
+        const createSelectOptions = arr => arr.map(item => `<option value="${item}">${item}</option>`).join('');
+        
+        document.getElementById('filterLabel').innerHTML = `<option value="ALL">Tutte</option><option value="EMPTY">Nessuna Label</option>` + createSelectOptions(dbLabels);
+        document.getElementById('filterArgomento').innerHTML = `<option value="ALL">Tutti</option><option value="EMPTY">Nessun Argomento</option>` + createSelectOptions(dbArgomenti);
+    }
+
+    // --- LOGICA RENDER TABELLA & FILTRI ---
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const searchTxt = document.getElementById('filterCopy').value.toLowerCase();
+        const filterL = document.getElementById('filterLabel').value;
+        const filterA = document.getElementById('filterArgomento').value;
+        const sortMode = document.getElementById('sortSelect').value;
+        const filterMissingBoth = document.getElementById('filterMissingBoth').checked;
+
+        let viewData = mainData.filter(p => {
+            let okTxt = p.Copy.toLowerCase().includes(searchTxt);
+            let okL = (filterL === "ALL") || (filterL === "EMPTY" && p.Label === "") || (p.Label === filterL);
+            let okA = (filterA === "ALL") || (filterA === "EMPTY" && p.Argomento === "") || (p.Argomento === filterA);
+            
+            let okMissingBoth = true;
+            if (filterMissingBoth) {
+                okMissingBoth = (p.Label === "" && p.Argomento === "");
+            }
+
+            return okTxt && okL && okA && okMissingBoth;
+        });
+
+        if (sortMode === 'date_desc') {
+            viewData.sort((a, b) => b._timestamp - a._timestamp);
+        } else if (sortMode === 'date_asc') {
+            viewData.sort((a, b) => a._timestamp - b._timestamp);
+        } else if (sortMode === 'similarity') {
+            viewData.sort((a, b) => a.Copy.localeCompare(b.Copy));
+        }
+
+        document.getElementById('postCounter').innerText = `${viewData.length} post visualizzati`;
+
+        let html = '';
+        viewData.forEach(p => {
+            const rowClass = p._selected ? "selected" : "";
+            const isChecked = p._selected ? "checked" : "";
+            const isIstChecked = p.Istituzionale ? "checked" : "";
+
+            let dateStr = p.Data;
+            if(p._timestamp) {
+                let d = new Date(p._timestamp);
+                dateStr = d.toLocaleDateString('it-IT') + " " + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
+            }
+
+            html += `
+            <tr class="${rowClass}" onclick="toggleRowSelection(event, ${p._id})">
+                <td class="checkbox-cell" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${isChecked} onchange="toggleSingle(${p._id}, this.checked)">
+                </td>
+                <td style="font-size:12px;">
+                    <a href="${p.Link}" target="_blank" class="link-data" onclick="event.stopPropagation()">${dateStr}</a>
+                </td>
+                <td><span class="badge">${p.Canale}</span></td>
+                <td><div class="truncate" title="${p.Copy.replace(/"/g, '&quot;')}">${p.Copy}</div></td>
+                <td onclick="event.stopPropagation()">
+                    <select onchange="updateRowField(${p._id}, 'Campagna', this.value)" style="width:100%;">
+                        <option value="Editoriale" ${p.Campagna === 'Editoriale' ? 'selected' : ''}>Editoriale</option>
+                        <option value="Campagna" ${p.Campagna === 'Campagna' ? 'selected' : ''}>Campagna</option>
+                    </select>
+                </td>
+                <td onclick="event.stopPropagation()">
+                    <input type="text" list="labels-datalist" value="${p.Label}" placeholder="Label..." onchange="updateRowField(${p._id}, 'Label', this.value)" style="width:100%;">
+                </td>
+                <td onclick="event.stopPropagation()">
+                    <input type="text" list="args-datalist" value="${p.Argomento}" placeholder="Argomento..." onchange="updateRowField(${p._id}, 'Argomento', this.value)" style="width:100%;">
+                </td>
+                <td style="text-align:center;" onclick="event.stopPropagation()">
+                    <input type="checkbox" ${isIstChecked} onchange="updateRowField(${p._id}, 'Istituzionale', this.checked)">
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    // --- GESTIONE STATO & SELEZIONI ---
+    function updateRowField(id, field, value) {
+        let post = mainData.find(x => x._id === id);
+        if(post) {
+            post[field] = value;
+            
+            const cleanVal = value.trim();
+            if(field === 'Label' && cleanVal !== '' && !dbLabels.includes(cleanVal)) {
+                dbLabels.push(cleanVal);
+                updateDatalists();
+            }
+            if(field === 'Argomento' && cleanVal !== '' && !dbArgomenti.includes(cleanVal)) {
+                dbArgomenti.push(cleanVal);
+                updateDatalists();
+            }
+        }
+    }
+
+    function toggleRowSelection(e, id) {
+        if(e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select' || e.target.tagName.toLowerCase() === 'a') return;
+        let post = mainData.find(x => x._id === id);
+        if(post) {
+            post._selected = !post._selected;
+            renderTable();
+        }
+    }
+
+    function toggleSingle(id, isChecked) {
+        let post = mainData.find(x => x._id === id);
+        if(post) post._selected = isChecked;
+        let tr = document.querySelector(`tr input[onchange="toggleSingle(${id}, this.checked)"]`).closest('tr');
+        if(isChecked) tr.classList.add('selected'); else tr.classList.remove('selected');
+    }
+
+    function toggleAll(chk) {
+        const isChecked = chk.checked;
+        const searchTxt = document.getElementById('filterCopy').value.toLowerCase();
+        const filterL = document.getElementById('filterLabel').value;
+        const filterA = document.getElementById('filterArgomento').value;
+        const filterMissingBoth = document.getElementById('filterMissingBoth').checked;
+
+        mainData.forEach(p => {
+            let okTxt = p.Copy.toLowerCase().includes(searchTxt);
+            let okL = (filterL === "ALL") || (filterL === "EMPTY" && p.Label === "") || (p.Label === filterL);
+            let okA = (filterA === "ALL") || (filterA === "EMPTY" && p.Argomento === "") || (p.Argomento === filterA);
+            
+            let okMissingBoth = true;
+            if (filterMissingBoth) okMissingBoth = (p.Label === "" && p.Argomento === "");
+
+            if (okTxt && okL && okA && okMissingBoth) {
+                p._selected = isChecked;
+            }
+        });
+        renderTable();
+    }
+
+    // --- AZIONI MASSIVE ---
+    function applyBulkActions(btn) {
+        const valLabel = document.getElementById('bulkLabel').value.trim();
+        const valArg = document.getElementById('bulkArgomento').value.trim();
+
+        let count = 0;
+        mainData.forEach(p => {
+            if(p._selected) {
+                if(valLabel !== "") updateRowField(p._id, 'Label', valLabel);
+                if(valArg !== "") updateRowField(p._id, 'Argomento', valArg);
+                p._selected = false;
+                count++;
+            }
+        });
+
+        document.getElementById('selectAll').checked = false;
+        document.getElementById('bulkLabel').value = '';
+        document.getElementById('bulkArgomento').value = '';
+        
+        renderTable();
+        flashButton(btn, `Applicato a ${count} post!`);
+    }
+
+    // --- ESPORTAZIONE EXCEL ---
+    function exportData(btn) {
+        if(mainData.length === 0) {
+            flashButton(btn, "Nessun dato!");
+            return;
+        }
+
+        const monthVal = document.getElementById('monthPicker').value; // YYYY-MM
+        let outMese = "";
+        if(monthVal) {
+            let parts = monthVal.split('-');
+            outMese = `01/${parts[1]}/${parts[0]}`; // gg/mm/aaaa
+        }
+
+        const exportArray = mainData.map(p => {
+            return {
+                "Link": p.Link,
+                "Dettagli Emplifi": p.DettagliEmplifi,
+                "Mese": outMese,
+                "Data": p.Data,
+                "Canale": p.Canale,
+                "Interazioni": p.Interazioni,
+                "Visualizzazioni": p.Visualizzazioni,
+                "Persone raggiunte": p.PersoneRaggiunte,
+                "Click": p.Click,
+                "Like e reazioni": p.LikeReazioni,
+                "Condivisioni": p.Condivisioni,
+                "Commenti": p.Commenti,
+                "Campagna": p.Campagna,
+                "Label": p.Label,
+                "Argomento": p.Argomento,
+                "Copy": p.Copy,
+                "Istituzionale": p.Istituzionale ? 1 : ""
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(exportArray);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Export");
+        XLSX.writeFile(workbook, "Social_Export_Elaborato.xlsx");
+
+        flashButton(btn, "File Scaricato!");
+    }
+
+    // --- UTILITIES ---
+    function autoFillMonth() {
+        if(mainData.length > 0 && mainData[0]._timestamp > 0) {
+            let d = new Date(mainData[0]._timestamp);
+            let mm = (d.getMonth() + 1).toString().padStart(2, '0');
+            document.getElementById('monthPicker').value = `${d.getFullYear()}-${mm}`;
+        }
+    }
+
+    function flashButton(el, text) {
+        const originalText = el.innerText;
+        el.innerText = text;
+        setTimeout(() => {
+            el.innerText = originalText;
+        }, 2000);
+    }
+</script>
+</body>
+</html>
