@@ -186,11 +186,11 @@
 
         .truncate {
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 4; /* Aumentato per mostrare più righe di testo */
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 300px;
+            max-width: 450px; /* Allargata la colonna copy */
             font-size: 13px;
         }
 
@@ -237,7 +237,7 @@
     <div class="header">
         <h1>Social Data Manager</h1>
         <button class="btn-yellow" onclick="exportData(this)">
-            Esporta Dati Elaborati
+            Esporta Dati Elaborati (Excel)
         </button>
     </div>
 
@@ -258,6 +258,13 @@
                 <button class="btn-outline" onclick="exportJSON(this)" style="margin-top: 8px; padding: 6px 12px; font-size: 12px;">
                     Scarica JSON Aggiornato
                 </button>
+            </div>
+            <div class="form-group">
+                <label>Assistente AI (Export/Import)</label>
+                <button class="btn-outline" onclick="exportForAI(this)" style="margin-bottom: 8px; padding: 6px 12px; font-size: 12px;">
+                    1. Esporta per AI (Con Prompt)
+                </button>
+                <input type="file" id="aiImportFile" accept=".json" onchange="importFromAI(event)">
             </div>
             <div class="form-group">
                 <label>Mese di Riferimento (Esportazione)</label>
@@ -313,7 +320,15 @@
                 <label>Seleziona Argomento per i post spuntati</label>
                 <input list="args-datalist" id="bulkArgomento" placeholder="Cerca o inserisci nuovo...">
             </div>
-            <button class="btn-primary" onclick="applyBulkActions(this)" style="height: 40px;">Applica ai selezionati</button>
+            <div class="form-group" style="flex: 0.5;">
+                <label>Istituzionale</label>
+                <select id="bulkIstituzionale" style="height: 38px;">
+                    <option value="">Invariato</option>
+                    <option value="true">Sì</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="applyBulkActions(this)" style="height: 38px;">Applica ai selezionati</button>
         </div>
     </div>
 
@@ -348,7 +363,7 @@
 <datalist id="args-datalist"></datalist>
 
 <script>
-    // Composizione sicura del brand name per evitare la stringa in chiaro (requirement iniziale)
+    // Composizione sicura del brand name
     const B_PARTS = ['P','o','s','t','e','I','t','a','l','i','a','n','e'];
     const B_STRING = B_PARTS.join('');
     const B_STRING_SPACED = B_PARTS.slice(0,5).join('') + ' ' + B_PARTS.slice(5).join('');
@@ -391,25 +406,20 @@
                     let pageName = pathSegments.length > 0 ? pathSegments[0] : "";
                     try { pageName = decodeURIComponent(pageName); } catch(e){}
 
-                    // Parole chiave usate nei permalink che "sporcano" il nome della pagina
                     const invalidTerms = ['reel', 'reels', 'watch', 'video', 'videos', 'p', 'shorts'];
-
-                    // Se l'URL contiene una delle parole invalidanti o se la pagina estratta è essa stessa una parola non valida
                     let hasInvalidTerm = invalidTerms.includes(pageName.toLowerCase()) || 
                                          row.Permalink.toLowerCase().includes('/reel') ||
                                          row.Permalink.toLowerCase().includes('/watch');
 
                     if (hasInvalidTerm) {
-                        // In questo caso, ignora l'URL e prendi tassativamente il dato dalla colonna
                         let nomeDallaColonna = row["Nome della Pagina"] || row["Nome della pagina"] || row["Page Name"];
                         if (nomeDallaColonna) {
                             pageName = nomeDallaColonna.trim();
                         } else {
-                            pageName = B_STRING; // Fallback di sicurezza
+                            pageName = B_STRING;
                         }
                     }
 
-                    // Verifica se il nome pagina coincide col brand principale
                     let isMainBrand = (pageName.toLowerCase().replace(/\s+/g, '') === B_STRING.toLowerCase());
 
                     if (isMainBrand || pageName === "") {
@@ -502,7 +512,7 @@
                 Label: row.Label || "",
                 Argomento: row.Argomento || "",
                 Copy: row.Copy || "",
-                Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === true || row.Istituzionale === "1") ? true : false
+                Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === true || row.Istituzionale === "1" || row.Istituzionale === "true") ? true : false
             };
         });
 
@@ -518,7 +528,7 @@
         renderTable();
     }
 
-    // --- CARICAMENTO E ESPORTAZIONE JSON ---
+    // --- CARICAMENTO E ESPORTAZIONE JSON (Database Argomenti/Label) ---
     function handleJSONUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -579,6 +589,91 @@
         
         document.getElementById('filterLabel').innerHTML = `<option value="ALL">Tutte</option><option value="EMPTY">Nessuna Label</option>` + createSelectOptions(dbLabels);
         document.getElementById('filterArgomento').innerHTML = `<option value="ALL">Tutti</option><option value="EMPTY">Nessun Argomento</option>` + createSelectOptions(dbArgomenti);
+    }
+
+    // --- ASSISTENTE AI EXPORT / IMPORT ---
+    function exportForAI(btn) {
+        if(mainData.length === 0) {
+            flashButton(btn, "Nessun dato da esportare!");
+            return;
+        }
+        
+        const aiPrompt = "Agisci come un esperto Social Media Data Analyst. Ti ho fornito un elenco di post social nell'array 'dati_da_analizzare'. Ogni oggetto ha un 'id' univoco e un 'copy' (il testo del post). IL TUO COMPITO: Analizza il testo ('copy') di ogni post e classificali in modo logico e ragionato, restituendo un JSON per l'importazione automatica. Istruzioni sui campi da compilare: 1. 'argomento': (Stringa) La macro-categoria tematica (es. Sostenibilità, Educazione Finanziaria, Corporate, Prodotto). Cerca di non frammentare troppo le categorie. 2. 'label': (Stringa) Un tag più specifico o sotto-categoria. 3. 'istituzionale': (Booleano true/false) Imposta a true se il post riguarda comunicazioni corporate di alto livello, bilanci, o parla dei vertici aziendali. REGOLE DI OUTPUT (CRITICHE): Devi restituirmi ESCLUSIVAMENTE un array JSON valido in formato RAW, senza testo introduttivo, senza spiegazioni e senza blocchi di codice Markdown (NON USARE simboli come i backtick o la parola json). Il risultato DEVE essere solo l'array di oggetti con questa esatta struttura: [ { \"id\": ID_ORIGINALE, \"argomento\": \"Nome Argomento\", \"label\": \"Nome Label\", \"istituzionale\": true } ]. NON alterare mai gli id.";
+
+        const aiData = mainData.map(p => ({
+            id: p._id,
+            copy: p.Copy,
+            label: p.Label || "",
+            argomento: p.Argomento || "",
+            istituzionale: p.Istituzionale
+        }));
+        
+        const exportObj = {
+            istruzioni_per_AI: aiPrompt,
+            dati_da_analizzare: aiData
+        };
+
+        const dataStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "da_inviare_alla_AI.json";
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        flashButton(btn, "File Pronto per AI!");
+    }
+
+    function importFromAI(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                let jsonString = e.target.result.trim();
+                
+                // Pulizia preventiva: alcune AI restituiscono comunque il blocco markdown nonostante il divieto
+                if (jsonString.startsWith('```json')) {
+                    jsonString = jsonString.replace(/^```json/, '').replace(/```$/, '').trim();
+                } else if (jsonString.startsWith('```')) {
+                    jsonString = jsonString.replace(/^```/, '').replace(/```$/, '').trim();
+                }
+
+                const aiResults = JSON.parse(jsonString);
+                
+                // L'AI potrebbe restituire l'array puro (corretto), oppure ripetere la struttura ad oggetto
+                let resultsArray = Array.isArray(aiResults) ? aiResults : (aiResults.dati_da_analizzare || aiResults.risultati || []);
+
+                if (!Array.isArray(resultsArray) || resultsArray.length === 0) {
+                    alert("Il file non sembra contenere un array valido di risultati. Verifica l'output dell'AI.");
+                    return;
+                }
+
+                let count = 0;
+                resultsArray.forEach(res => {
+                    let post = mainData.find(x => x._id === res.id);
+                    if (post) {
+                        if (res.label !== undefined && res.label !== "") updateRowField(post._id, 'Label', res.label);
+                        if (res.argomento !== undefined && res.argomento !== "") updateRowField(post._id, 'Argomento', res.argomento);
+                        if (res.istituzionale !== undefined) updateRowField(post._id, 'Istituzionale', res.istituzionale);
+                        count++;
+                    }
+                });
+                
+                renderTable();
+                event.target.value = ''; // Reset dell'input
+                flashButton(event.target.parentElement.querySelector('label'), `Aggiornati ${count} post!`);
+            } catch (err) {
+                console.error(err);
+                alert("Errore nel parsing del JSON. Assicurati che l'AI abbia restituito un formato compatibile senza testo aggiuntivo.");
+            }
+        };
+        reader.readAsText(file);
     }
 
     // --- LOGICA RENDER TABELLA & FILTRI ---
@@ -662,7 +757,7 @@
         if(post) {
             post[field] = value;
             
-            const cleanVal = value.trim();
+            const cleanVal = (typeof value === 'string') ? value.trim() : value;
             if(field === 'Label' && cleanVal !== '' && !dbLabels.includes(cleanVal)) {
                 dbLabels.push(cleanVal);
                 updateDatalists();
@@ -716,12 +811,14 @@
     function applyBulkActions(btn) {
         const valLabel = document.getElementById('bulkLabel').value.trim();
         const valArg = document.getElementById('bulkArgomento').value.trim();
+        const valIst = document.getElementById('bulkIstituzionale').value;
 
         let count = 0;
         mainData.forEach(p => {
             if(p._selected) {
                 if(valLabel !== "") updateRowField(p._id, 'Label', valLabel);
                 if(valArg !== "") updateRowField(p._id, 'Argomento', valArg);
+                if(valIst !== "") updateRowField(p._id, 'Istituzionale', valIst === "true");
                 p._selected = false;
                 count++;
             }
@@ -730,6 +827,7 @@
         document.getElementById('selectAll').checked = false;
         document.getElementById('bulkLabel').value = '';
         document.getElementById('bulkArgomento').value = '';
+        document.getElementById('bulkIstituzionale').value = '';
         
         renderTable();
         flashButton(btn, `Applicato a ${count} post!`);
