@@ -3,895 +3,828 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Social Media Data Manager</title>
+    <title>Social Media Data Manager 4.0.1</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
         /* --- STILI MINIMAL & BRANDING --- */
         :root {
             --brand-yellow: #eddc01;
             --brand-blue: #0146bc;
+            --brand-blue-light: #e6efff;
             --bg-body: #f5f5f7;
             --bg-surface: #ffffff;
             --text-main: #1d1d1f;
             --text-light: #86868b;
             --border-color: #d2d2d7;
             --radius: 12px;
-            --shadow: 0 4px 6px rgba(0,0,0,0.04);
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
             --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: var(--font-family);
-        }
-
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            padding: 20px;
-            font-size: 14px;
-        }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); }
+        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; font-size: 14px; padding-bottom: 80px; }
         h1, h2, h3 { font-weight: 600; }
         
-        /* Layout Strutturale */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1400px; margin: 0 auto; }
 
+        /* Header & Tabs */
         .header {
-            background-color: var(--brand-blue);
-            color: var(--bg-surface);
-            padding: 24px;
-            border-radius: var(--radius);
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: var(--shadow);
+            background-color: var(--brand-blue); color: var(--bg-surface);
+            padding: 20px 24px; border-radius: var(--radius) var(--radius) 0 0;
+            display: flex; justify-content: space-between; align-items: center;
         }
+        .header h1 { font-size: 22px; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+        
+        .tabs {
+            display: flex; background: var(--bg-surface); border-radius: 0 0 var(--radius) var(--radius);
+            box-shadow: var(--shadow); margin-bottom: 24px; overflow: hidden; border: 1px solid var(--border-color); border-top: none;
+        }
+        .tab-btn {
+            flex: 1; padding: 16px; border: none; background: transparent; cursor: pointer;
+            font-size: 14px; font-weight: 600; color: var(--text-light); transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn:hover { background-color: var(--bg-body); }
+        .tab-btn.active { color: var(--brand-blue); border-bottom-color: var(--brand-yellow); background-color: #fcfcfd; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .header h1 {
-            font-size: 24px;
-            letter-spacing: -0.5px;
+        /* Cards & Forms */
+        .card { background-color: var(--bg-surface); padding: 24px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px; border: 1px solid var(--border-color); }
+        .card-title { font-size: 16px; color: var(--brand-blue); margin-bottom: 16px; text-transform: uppercase; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; color: var(--text-light); font-weight: 600; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+        
+        input[type="text"], input[type="month"], input[type="file"], select, textarea {
+            padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; background-color: var(--bg-surface); transition: all 0.2s; outline: none; width: 100%;
         }
+        input:focus, select:focus, textarea:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(1, 70, 188, 0.1); }
+        textarea { resize: vertical; min-height: 52px; line-height: 1.4; }
 
-        .card {
-            background-color: var(--bg-surface);
-            padding: 24px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 24px;
-            border: 1px solid var(--border-color);
+        /* Chip/Tag Termini Frequenti */
+        .chip {
+            display: inline-flex; align-items: center; padding: 4px 10px;
+            background: var(--brand-blue-light); color: var(--brand-blue);
+            border-radius: 16px; font-size: 12px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; border: 1px solid transparent; white-space: nowrap;
         }
+        .chip:hover { background: var(--brand-blue); color: var(--bg-surface); }
 
-        .card-title {
-            font-size: 16px;
-            color: var(--brand-blue);
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 700;
-        }
+        /* Custom Autocomplete per Textarea */
+        .sugg-container { position: relative; width: 100%; }
+        .sugg-box { display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); z-index: 100; max-height: 180px; overflow-y: auto; }
+        .sugg-box div { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--bg-body); font-size: 13px; line-height: 1.3; }
+        .sugg-box div:last-child { border-bottom: none; }
+        .sugg-box div:hover { background: var(--brand-blue-light); color: var(--brand-blue); font-weight: 500; }
+        
+        /* Select Menus Style */
+        select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2386868b' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
 
-        /* Form Controls */
-        .grid-layout {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        label {
-            font-size: 12px;
-            color: var(--text-light);
-            font-weight: 500;
-        }
-
-        input[type="text"], input[type="month"], input[type="date"], input[type="file"], select {
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
-            background-color: var(--bg-surface);
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
-        }
-
-        input[type="text"]:focus, select:focus {
-            border-color: var(--brand-blue);
-            box-shadow: 0 0 0 3px rgba(1, 70, 188, 0.1);
-        }
-
-        /* Bottoni */
-        button {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background-color: var(--brand-blue);
-            color: var(--bg-surface);
-        }
+        /* Buttons */
+        button { padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background-color: var(--brand-blue); color: var(--bg-surface); }
         .btn-primary:hover { background-color: #013a9c; }
-
-        .btn-yellow {
-            background-color: var(--brand-yellow);
-            color: var(--brand-blue);
-        }
+        .btn-yellow { background-color: var(--brand-yellow); color: var(--brand-blue); }
         .btn-yellow:hover { filter: brightness(0.95); }
-
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-        }
+        .btn-outline { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
         .btn-outline:hover { background-color: var(--bg-body); }
+        .btn-light-blue { background-color: var(--brand-blue-light); color: var(--brand-blue); border: 1px solid #cce0ff; }
+        .btn-light-blue:hover { background-color: #d6e7ff; }
+
+        /* Bulk Actions Sticky */
+        .bulk-actions {
+            background-color: var(--bg-surface); padding: 16px; border-radius: 8px; margin-bottom: 16px; display: flex; gap: 16px; align-items: flex-end;
+            border: 1px dashed var(--brand-blue); position: sticky; top: 10px; z-index: 20; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .bulk-actions.visible { opacity: 1; pointer-events: auto; }
 
         /* Table */
-        .table-responsive {
-            overflow-x: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            max-height: 600px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            background-color: var(--bg-surface);
-        }
-
-        th, td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #fcfcfc;
-            color: var(--text-light);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        tr:hover td { background-color: var(--bg-body); }
+        .table-responsive { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; background-color: var(--bg-surface); table-layout: fixed; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+        th { background-color: #fcfcfc; color: var(--text-light); font-size: 12px; text-transform: uppercase; font-weight: 600; }
+        tr:hover td { background-color: #f9f9fa; }
         tr.selected td { background-color: rgba(237, 220, 1, 0.15); }
 
         .truncate {
-            display: -webkit-box;
-            -webkit-line-clamp: 4; /* Aumentato per mostrare più righe di testo */
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 450px; /* Allargata la colonna copy */
-            font-size: 13px;
+            display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+            text-overflow: ellipsis; max-width: 100%; font-size: 13px; line-height: 1.4;
         }
-
-        /* Utility */
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: var(--brand-yellow);
-            color: var(--brand-blue);
-            font-weight: 600;
-            font-size: 11px;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        
-        a.link-data {
-            color: var(--brand-blue);
-            text-decoration: none;
-            font-weight: 600;
-        }
-        a.link-data:hover {
-            text-decoration: underline;
-        }
-
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-main); font-weight: 600; font-size: 11px; white-space: nowrap; }
         .checkbox-cell { text-align: center; width: 40px; }
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
         
-        .bulk-actions {
-            background-color: var(--bg-body);
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: flex;
-            gap: 16px;
-            align-items: flex-end;
-            border: 1px dashed var(--border-color);
+        /* Pagination & Empty State */
+        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 0 0 0; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
+        .empty-state i { font-size: 48px; color: var(--border-color); margin-bottom: 16px; display: block; }
+
+        /* Toast Notifications */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast {
+            background: var(--text-main); color: white; padding: 12px 20px; border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 14px; font-weight: 500;
+            display: flex; align-items: center; gap: 8px; animation: slideIn 0.3s forwards;
         }
+        .toast.success { border-left: 4px solid #34c759; }
+        .toast.error { border-left: 4px solid #ff3b30; }
+        .toast.info { border-left: 4px solid var(--brand-blue); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(10px); } }
+
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h1>Social Data Manager</h1>
-        <button class="btn-yellow" onclick="exportData(this)">
-            Esporta Dati Elaborati (Excel)
-        </button>
+        <h1><i class="ph ph-database"></i> Social Data Manager</h1>
+        <button class="btn-yellow" onclick="exportData()"><i class="ph ph-download-simple"></i> Esporta Excel</button>
     </div>
 
-    <div class="card">
-        <div class="card-title">1. Caricamento Dati e Database</div>
-        <div class="grid-layout">
-            <div class="form-group">
-                <label>Carica Nuovi Post (CSV Originale)</label>
-                <input type="file" id="csvFile" accept=".csv" onchange="handleCSVUpload(event)">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-import')"><i class="ph ph-folder-open"></i> 1. Importa & Database</button>
+        <button class="tab-btn" onclick="switchTab('tab-workspace')"><i class="ph ph-table"></i> 2. Area di Lavoro</button>
+        <button class="tab-btn" onclick="switchTab('tab-ai')"><i class="ph ph-robot"></i> 3. Assistente AI</button>
+    </div>
+
+    <div id="tab-import" class="tab-content active">
+        <div class="card">
+            <div class="card-title"><i class="ph ph-file-csv"></i> Caricamento Dati</div>
+            <div class="grid-layout">
+                <div class="form-group">
+                    <label for="csvFile"><i class="ph ph-plus-circle"></i> Carica Nuovi Post (CSV Originale)</label>
+                    <input type="file" id="csvFile" accept=".csv" onchange="handleCSVUpload(event)">
+                </div>
+                <div class="form-group">
+                    <label for="excelFile"><i class="ph ph-clock-counter-clockwise"></i> Riprendi Lavoro (Excel Esportato)</label>
+                    <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
+                </div>
+                <div class="form-group">
+                    <label for="monthPicker"><i class="ph ph-calendar"></i> Mese di Riferimento</label>
+                    <input type="month" id="monthPicker">
+                </div>
             </div>
-            <div class="form-group">
-                <label>Riprendi Lavoro (Excel Esportato)</label>
-                <input type="file" id="excelFile" accept=".xlsx, .xls" onchange="handleExcelUpload(event)">
-            </div>
-            <div class="form-group">
-                <label>Carica Argomenti/Label (JSON)</label>
-                <input type="file" id="jsonFile" accept=".json" onchange="handleJSONUpload(event)">
-                <button class="btn-outline" onclick="exportJSON(this)" style="margin-top: 8px; padding: 6px 12px; font-size: 12px;">
-                    Scarica JSON Aggiornato
-                </button>
-            </div>
-            <div class="form-group">
-                <label>Assistente AI (Export/Import)</label>
-                <button class="btn-outline" onclick="exportForAI(this)" style="margin-bottom: 8px; padding: 6px 12px; font-size: 12px;">
-                    1. Esporta per AI (Con Prompt)
-                </button>
-                <input type="file" id="aiImportFile" accept=".json" onchange="importFromAI(event)">
-            </div>
-            <div class="form-group">
-                <label>Mese di Riferimento (Esportazione)</label>
-                <input type="month" id="monthPicker">
+        </div>
+
+        <div class="card">
+            <div class="card-title"><i class="ph ph-books"></i> Database Argomenti & Label</div>
+            <div class="grid-layout">
+                <div class="form-group">
+                    <label for="jsonFile"><i class="ph ph-upload-simple"></i> Carica File Struttura (JSON)</label>
+                    <input type="file" id="jsonFile" accept=".json" onchange="handleJSONUpload(event)">
+                </div>
+                <div class="form-group" style="justify-content: flex-end;">
+                    <button class="btn-outline" onclick="exportJSON()"><i class="ph ph-download-simple"></i> Scarica JSON Aggiornato</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-title">2. Filtri, Ordinamento e Azioni Massive</div>
-        <div class="grid-layout" style="margin-bottom: 16px;">
-            <div class="form-group">
-                <label>Ricerca nel Copy</label>
-                <input type="text" id="filterCopy" placeholder="Cerca parole chiave..." oninput="renderTable()">
+    <div id="tab-workspace" class="tab-content">
+        <div class="card" style="margin-bottom: 12px; padding: 16px 24px;">
+            <div class="grid-layout">
+                <div class="form-group">
+                    <label for="filterCopy">Ricerca nel Copy</label>
+                    <input type="text" id="filterCopy" placeholder="Cerca parole..." oninput="debouncedRender()">
+                </div>
+                <div class="form-group">
+                    <label for="filterLabel">Filtra Label</label>
+                    <select id="filterLabel" onchange="renderTable()"><option value="ALL">Tutte</option><option value="EMPTY">Nessuna Label</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="filterArgomento">Filtra Argomento</label>
+                    <select id="filterArgomento" onchange="renderTable()"><option value="ALL">Tutti</option><option value="EMPTY">Nessun Argomento</option></select>
+                </div>
+                <div class="form-group">
+                    <label for="sortSelect">Ordinamento</label>
+                    <select id="sortSelect" onchange="renderTable()">
+                        <option value="date_desc">Più recenti prima</option>
+                        <option value="date_asc">Più vecchi prima</option>
+                    </select>
+                </div>
+                
+                <div id="frequentTermsContainer" class="form-group" style="grid-column: 1 / -1; display: none; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                    </div>
+                
             </div>
-            <div class="form-group">
-                <label>Filtra Label</label>
-                <select id="filterLabel" onchange="renderTable()">
-                    <option value="ALL">Tutte</option>
-                    <option value="EMPTY">Nessuna Label</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Filtra Argomento</label>
-                <select id="filterArgomento" onchange="renderTable()">
-                    <option value="ALL">Tutti</option>
-                    <option value="EMPTY">Nessun Argomento</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Ordina Post</label>
-                <select id="sortSelect" onchange="renderTable()">
-                    <option value="date_desc">Data (Più recenti prima)</option>
-                    <option value="date_asc">Data (Più vecchi prima)</option>
-                    <option value="similarity">Raggruppa per Copy simile</option>
-                </select>
-            </div>
-            
-            <div class="form-group" style="grid-column: 1 / -1; margin-top: 8px;">
-                <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main);">
-                    <input type="checkbox" id="filterMissingBoth" onchange="renderTable()" style="width: auto;">
-                    Mostra solo i post che NON hanno né Label né Argomento
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-color);">
+                <label style="flex-direction: row; font-size: 13px;">
+                    <input type="checkbox" id="filterIncomplete" onchange="renderTable()"> 
+                    Mostra post <strong>DA COMPLETARE</strong> (manca Label o Argomento)
                 </label>
             </div>
         </div>
 
-        <div class="bulk-actions">
-            <div class="form-group" style="flex: 1;">
-                <label>Seleziona Label per i post spuntati</label>
-                <input list="labels-datalist" id="bulkLabel" placeholder="Cerca o inserisci nuova...">
+        <div id="bulkActionsPanel" class="bulk-actions">
+            <div style="flex: 0.8; display:flex; align-items:center; gap: 8px;">
+                <i class="ph ph-check-square-offset" style="font-size: 24px; color: var(--brand-blue);"></i>
+                <span id="bulkCount" style="font-weight:bold; color: var(--brand-blue);">0 Sel.</span>
             </div>
-            <div class="form-group" style="flex: 1;">
-                <label>Seleziona Argomento per i post spuntati</label>
-                <input list="args-datalist" id="bulkArgomento" placeholder="Cerca o inserisci nuovo...">
+            
+            <div style="flex: 1.5; display: flex; gap: 8px;" id="cloneArea">
+                <button class="btn-light-blue" onclick="cloneToEmpty()" style="height: 38px; width: 100%;"><i class="ph ph-copy"></i> Clona su Vuoti</button>
             </div>
-            <div class="form-group" style="flex: 0.5;">
-                <label>Istituzionale</label>
+
+            <div class="form-group" style="flex: 2;">
+                <label for="bulkArgomento" style="display:none;">Applica Argomento</label>
+                <input type="text" list="args-datalist" id="bulkArgomento" placeholder="Digita Argomento da applicare...">
+            </div>
+            <div class="form-group" style="flex: 1.5;">
+                <select id="bulkLabel" class="dynamic-select-label"></select>
+            </div>
+            <div class="form-group" style="flex: 0.8;">
                 <select id="bulkIstituzionale" style="height: 38px;">
-                    <option value="">Invariato</option>
-                    <option value="true">Sì</option>
-                    <option value="false">No</option>
+                    <option value="">Ist. Invariato</option><option value="true">Sì</option><option value="false">No</option>
                 </select>
             </div>
-            <button class="btn-primary" onclick="applyBulkActions(this)" style="height: 38px;">Applica ai selezionati</button>
+            <button class="btn-primary" onclick="applyBulkActions()" style="height: 38px;"><i class="ph ph-floppy-disk"></i> Applica</button>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell" style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
+                            <th style="width: 90px;">Data</th>
+                            <th style="width: 120px;">Canale</th>
+                            <th style="width: auto;">Copy</th>
+                            <th style="width: 280px;">Argomento (Testo Libero)</th>
+                            <th style="width: 200px;">Label</th>
+                            <th style="width: 60px; text-align:center;">Ist.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="7">
+                            <div class="empty-state">
+                                <i class="ph ph-magnifying-glass"></i>
+                                <h3>Nessun dato da mostrare</h3>
+                                <p>Importa un file CSV o Excel dal tab "Importa & Database" per iniziare.</p>
+                            </div>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="paginationControls" style="display:none;">
+                <div style="font-size: 13px; color: var(--text-light);" id="postCounter">0 post visualizzati</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn-outline" onclick="changePage(-1)" id="btnPrev"><i class="ph ph-caret-left"></i> Precedente</button>
+                    <span id="pageInfo" style="font-size: 13px; font-weight: bold;">Pag. 1 di 1</span>
+                    <button class="btn-outline" onclick="changePage(1)" id="btnNext">Successiva <i class="ph ph-caret-right"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="flex-between" style="margin-bottom: 16px;">
-            <div class="card-title" style="margin-bottom: 0;">3. Gestione Post</div>
-            <div style="font-size: 13px; color: var(--text-light);" id="postCounter">0 post visualizzati</div>
-        </div>
-        
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="checkbox-cell"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
-                        <th style="width: 120px;">Data (Link)</th>
-                        <th style="width: 150px;">Canale</th>
-                        <th>Copy (Titolo)</th>
-                        <th style="width: 140px;">Campagna</th>
-                        <th style="width: 180px;">Label</th>
-                        <th style="width: 180px;">Argomento</th>
-                        <th style="width: 80px; text-align:center;">Ist.</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    </tbody>
-            </table>
+    <div id="tab-ai" class="tab-content">
+        <div class="card">
+            <div class="card-title"><i class="ph ph-robot"></i> Classificazione Automatica con AI</div>
+            <p style="margin-bottom: 16px; color: var(--text-light); line-height: 1.5;">
+                Invece di scaricare file, ora puoi copiare direttamente i dati e il prompt negli appunti. Incollali su ChatGPT o Claude, poi incolla la loro risposta (il JSON RAW) nel riquadro sottostante per aggiornare automaticamente la tabella.
+            </p>
+            <div class="grid-layout">
+                <div class="form-group" style="background: var(--bg-body); padding: 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                    <h4 style="margin-bottom: 8px;">1. Esporta per l'AI</h4>
+                    <p style="font-size: 12px; margin-bottom: 12px; color: var(--text-light);">Genera il prompt e i post attuali da inviare all'intelligenza artificiale.</p>
+                    <button class="btn-primary" onclick="copyPromptForAI()"><i class="ph ph-copy"></i> Copia Prompt & Dati negli appunti</button>
+                </div>
+                <div class="form-group" style="background: var(--bg-body); padding: 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
+                    <h4 style="margin-bottom: 8px;">2. Importa risposta AI</h4>
+                    <textarea id="aiJsonInput" rows="4" placeholder="Incolla qui l'array JSON restituito dall'AI (es. [{id: 1, argomento: '...'}])"></textarea>
+                    <button class="btn-yellow" onclick="importFromAIText()" style="margin-top: 8px;"><i class="ph ph-download-simple"></i> Aggiorna Tabella</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<datalist id="labels-datalist"></datalist>
 <datalist id="args-datalist"></datalist>
+<div id="toast-container"></div>
 
 <script>
-    // Composizione sicura del brand name
-    const B_PARTS = ['P','o','s','t','e','I','t','a','l','i','a','n','e'];
-    const B_STRING = B_PARTS.join('');
-    const B_STRING_SPACED = B_PARTS.slice(0,5).join('') + ' ' + B_PARTS.slice(5).join('');
-
-    // Strutture dati
+    // --- VARIABILI GLOBALI E SETUP ---
     let mainData = [];
+    let viewData = [];
     let dbLabels = [];
     let dbArgomenti = [];
+    let currentPage = 1;
+    const rowsPerPage = 50;
 
-    // --- CARICAMENTO NUOVI DATI (CSV) ---
-    function handleCSVUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                processRawData(results.data);
-                document.getElementById('excelFile').value = '';
-                flashButton(event.target.parentElement.querySelector('label'), "CSV Caricato!");
-            }
-        });
+    // --- UTILITIES UI ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+        if(tabId === 'tab-workspace' && mainData.length > 0) renderTable();
     }
 
-    function processRawData(data) {
-        const regexIstituzionale = /(Del Fante|Lasco|Rovere)/i;
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        let icon = type === 'success' ? 'check-circle' : type === 'error' ? 'warning-circle' : 'info';
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="ph ph-${icon}" style="font-size: 18px;"></i> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 
-        mainData = data.map((row, index) => {
-            const copyText = row.Titolo || row.Descrizione || "";
-            let canaleFinale = "";
+    function checkBulkActions() {
+        const selected = mainData.filter(p => p._selected);
+        const panel = document.getElementById('bulkActionsPanel');
+        const cloneArea = document.getElementById('cloneArea');
+        
+        if(selected.length > 0) {
+            panel.classList.add('visible');
+            document.getElementById('bulkCount').innerText = `${selected.length} Sel.`;
+            
+            const hasPopulated = selected.some(p => p.Argomento || p.Label);
+            const hasEmpty = selected.some(p => !p.Argomento && !p.Label);
+            if (hasPopulated && hasEmpty && selected.length > 1) cloneArea.style.display = 'flex';
+            else cloneArea.style.display = 'none';
+        } else {
+            panel.classList.remove('visible');
+            document.getElementById('selectAll').checked = false;
+        }
+    }
 
-            if (row.Permalink) {
-                try {
-                    let url = new URL(row.Permalink);
-                    let host = url.hostname.replace('www.', '').split('.')[0];
-                    let capitalizeHost = host.charAt(0).toUpperCase() + host.slice(1);
-                    
-                    let pathSegments = url.pathname.split('/').filter(p => p.trim() !== "");
-                    let pageName = pathSegments.length > 0 ? pathSegments[0] : "";
-                    try { pageName = decodeURIComponent(pageName); } catch(e){}
+    // --- GENERAZIONE TERMINI FREQUENTI ---
+    function updateFrequentTerms() {
+        if (mainData.length === 0) return;
+        
+        const stopWords = ['il','lo','la','i','gli','le','un','uno','una','di','a','da','in','con','su','per','tra','fra','e','o','ma','se','che','non','del','della','dei','delle','al','alla','ai','alle','nel','nella','nei','nelle','sul','sulla','sui','sulle','più','anche','ci','si','sono','ha','essere','fare','questo','questa','quello','quella','tutti','tutte','cui','come','quando','dopo','può','solo','oggi','scopri','nostro','nostra','nostri','nostre','degli','dello','hanno', 'poste', '#posteitaliane', 'servizio', '#tgposte', 'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre', 'ufficio', 'postale', 'dell', 'fino'];
+        
+        let wordCounts = {};
 
-                    const invalidTerms = ['reel', 'reels', 'watch', 'video', 'videos', 'p', 'shorts'];
-                    let hasInvalidTerm = invalidTerms.includes(pageName.toLowerCase()) || 
-                                         row.Permalink.toLowerCase().includes('/reel') ||
-                                         row.Permalink.toLowerCase().includes('/watch');
-
-                    if (hasInvalidTerm) {
-                        let nomeDallaColonna = row["Nome della Pagina"] || row["Nome della pagina"] || row["Page Name"];
-                        if (nomeDallaColonna) {
-                            pageName = nomeDallaColonna.trim();
-                        } else {
-                            pageName = B_STRING;
+        mainData.forEach(p => {
+            let text = p.Copy.toLowerCase().replace(/tg poste/g, '');
+            // Estrae tutte le parole in sequenza per poter controllare le coppie
+            let rawWords = text.match(/[a-zàèéìòù#0-9_]+/g) || [];
+            
+            for (let i = 0; i < rawWords.length; i++) {
+                let w1 = rawWords[i];
+                let isValid1 = w1.startsWith('#') || (w1.length >= 4 && !stopWords.includes(w1));
+                
+                if (isValid1) {
+                    // Controlla la parola successiva per formare il blocco da due (bigramma)
+                    if (i < rawWords.length - 1) {
+                        let w2 = rawWords[i + 1];
+                        let isValid2 = w2.startsWith('#') || (w2.length >= 4 && !stopWords.includes(w2));
+                        
+                        if (isValid2) {
+                            let bigram = w1 + ' ' + w2;
+                            wordCounts[bigram] = (wordCounts[bigram] || 0) + 1;
                         }
                     }
-
-                    let isMainBrand = (pageName.toLowerCase().replace(/\s+/g, '') === B_STRING.toLowerCase());
-
-                    if (isMainBrand || pageName === "") {
-                        canaleFinale = capitalizeHost;
-                    } else {
-                        canaleFinale = capitalizeHost + " " + pageName;
-                    }
-                } catch(e) {
-                    canaleFinale = "Sconosciuto";
                 }
             }
-
-            let ts = 0;
-            if (row["Orario di pubblicazione"]) {
-                ts = new Date(row["Orario di pubblicazione"]).getTime() || 0;
-            }
-
-            return {
-                _id: index,
-                _selected: false,
-                _timestamp: ts,
-                Link: row.Permalink || "",
-                DettagliEmplifi: "",
-                Mese: "", 
-                Data: row["Orario di pubblicazione"] || "",
-                Canale: canaleFinale,
-                Interazioni: row["Reazioni, commenti e condivisioni"] || "0",
-                Visualizzazioni: row.Visualizzazioni || "0",
-                PersoneRaggiunte: row.Copertura || "0",
-                Click: row["Clic totali"] || "0",
-                LikeReazioni: row.Reazioni || "0",
-                Condivisioni: row.Condivisioni || "0",
-                Commenti: row.Commenti || "0",
-                Campagna: "Editoriale", 
-                Label: "",
-                Argomento: "",
-                Copy: copyText,
-                Istituzionale: regexIstituzionale.test(copyText) ? true : false
-            };
         });
 
-        autoFillMonth();
+        let sorted = Object.entries(wordCounts)
+            .filter(([word, count]) => count >= 2)
+            .sort((a,b) => b[1] - a[1])
+            .slice(0, 60);
+
+        let container = document.getElementById('frequentTermsContainer');
+        if(sorted.length > 0) {
+            let html = `
+            <details style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--bg-surface);">
+                <summary style="font-size: 13px; font-weight: 600; color: var(--brand-blue); cursor: pointer; outline: none; list-style: none; display: flex; align-items: center; gap: 8px;">
+                    <i class="ph ph-funnel"></i> Filtra per termini frequenti (${sorted.length} tag disponibili)
+                </summary>
+                <div style="column-count: 3; column-gap: 16px; margin-top: 16px;">`;
+            
+            html += sorted.map(([word, count]) => `<div style="margin-bottom: 8px; break-inside: avoid;"><span class="chip" style="display: flex; justify-content: space-between; width: 100%;" onclick="applyTermFilter('${word}')"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%;">${word}</span> <span style="opacity: 0.7; font-size: 10px;">${count}</span></span></div>`).join('');
+            
+            html += `</div></details>`;
+            container.innerHTML = html;
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function applyTermFilter(term) {
+        document.getElementById('filterCopy').value = term;
+        currentPage = 1;
         renderTable();
     }
 
-    // --- RIPRENDI LAVORO (EXCEL) ---
+    // --- CARICAMENTO DATI ---
+    function handleCSVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+            header: true, skipEmptyLines: true,
+            complete: function(results) {
+                processRawData(results.data);
+                document.getElementById('excelFile').value = '';
+                showToast("CSV elaborato con successo!");
+                switchTab('tab-workspace');
+            }
+        });
+    }
+
     function handleExcelUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
-            const firstSheetName = workbook.SheetNames[0];
-            
-            const excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], {raw: false});
+            const excelRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {raw: false});
             processExcelData(excelRows);
-            
             document.getElementById('csvFile').value = ''; 
-            flashButton(event.target.parentElement.querySelector('label'), "Excel Ripreso!");
+            showToast("Progetto ripristinato da Excel!");
+            switchTab('tab-workspace');
         };
         reader.readAsArrayBuffer(file);
     }
 
-    function processExcelData(data) {
+    function processRawData(data) {
+        const regexIstituzionale = /(Del Fante|Lasco|Rovere)/i;
         mainData = data.map((row, index) => {
-            let ts = 0;
-            if (row.Data) {
-                ts = new Date(row.Data).getTime() || 0;
+            const copyText = row.Titolo || row.Descrizione || "";
+            let canaleFinale = "Sconosciuto";
+            if (row.Permalink) {
+                try {
+                    let url = new URL(row.Permalink);
+                    let host = url.hostname.replace('www.', '').split('.')[0];
+                    canaleFinale = host.charAt(0).toUpperCase() + host.slice(1);
+                } catch(e) {}
             }
-            
             return {
-                _id: index,
-                _selected: false,
-                _timestamp: ts,
-                Link: row.Link || "",
-                DettagliEmplifi: row["Dettagli Emplifi"] || "",
-                Mese: row.Mese || "",
-                Data: row.Data || "",
-                Canale: row.Canale || "",
-                Interazioni: row.Interazioni || "0",
-                Visualizzazioni: row.Visualizzazioni || "0",
-                PersoneRaggiunte: row["Persone raggiunte"] || "0",
-                Click: row.Click || "0",
-                LikeReazioni: row["Like e reazioni"] || "0",
-                Condivisioni: row.Condivisioni || "0",
-                Commenti: row.Commenti || "0",
-                Campagna: row.Campagna || "Editoriale",
-                Label: row.Label || "",
-                Argomento: row.Argomento || "",
-                Copy: row.Copy || "",
-                Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === true || row.Istituzionale === "1" || row.Istituzionale === "true") ? true : false
+                _id: index, _selected: false,
+                _timestamp: new Date(row["Orario di pubblicazione"]).getTime() || 0,
+                Link: row.Permalink || "", DettagliEmplifi: "", Mese: "", 
+                Data: row["Orario di pubblicazione"] || "", Canale: canaleFinale,
+                Interazioni: row["Reazioni, commenti e condivisioni"] || "0", Visualizzazioni: row.Visualizzazioni || "0",
+                Campagna: "Editoriale", Label: "", Argomento: "", Copy: copyText,
+                Istituzionale: regexIstituzionale.test(copyText)
             };
         });
-
-        if(mainData.length > 0 && mainData[0].Mese) {
-            let parts = mainData[0].Mese.split('/');
-            if(parts.length === 3) {
-                document.getElementById('monthPicker').value = `${parts[2]}-${parts[1]}`;
-            }
-        } else {
-            autoFillMonth();
-        }
-        
+        autoFillMonth(); 
+        updateFrequentTerms();
         renderTable();
     }
 
-    // --- CARICAMENTO E ESPORTAZIONE JSON (Database Argomenti/Label) ---
+    function processExcelData(data) {
+        mainData = data.map((row, index) => ({
+            _id: index, _selected: false,
+            _timestamp: new Date(row.Data).getTime() || 0,
+            Link: row.Link || "", DettagliEmplifi: row["Dettagli Emplifi"] || "", Mese: row.Mese || "",
+            Data: row.Data || "", Canale: row.Canale || "",
+            Interazioni: row.Interazioni || "0", Visualizzazioni: row.Visualizzazioni || "0",
+            Campagna: row.Campagna || "Editoriale", Label: row.Label || "", Argomento: row.Argomento || "",
+            Copy: row.Copy || "", Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === "true" || row.Istituzionale === true)
+        }));
+        if(mainData.length > 0 && mainData[0].Mese) {
+            let parts = mainData[0].Mese.split('/');
+            if(parts.length === 3) document.getElementById('monthPicker').value = `${parts[2]}-${parts[1]}`;
+        } else { autoFillMonth(); }
+        
+        mainData.forEach(p => {
+            if (p.Label && !dbLabels.includes(p.Label)) dbLabels.push(p.Label);
+            if (p.Argomento && !dbArgomenti.includes(p.Argomento)) dbArgomenti.push(p.Argomento);
+        });
+        updateDatalists(); 
+        updateFrequentTerms();
+        renderTable();
+    }
+
+    function autoFillMonth() {
+        if(mainData.length > 0 && mainData[0]._timestamp > 0) {
+            let d = new Date(mainData[0]._timestamp);
+            document.getElementById('monthPicker').value = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        }
+    }
+
+    // --- GESTIONE DATABASE JSON E DROPDOWNS ---
     function handleJSONUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
                 const json = JSON.parse(e.target.result);
-                dbLabels = json.Label || [];
-                dbArgomenti = json.Argomento || [];
-                updateDatalists();
-                renderTable();
-                flashButton(event.target.parentElement.querySelector('label'), "Database Caricato!");
-            } catch (err) {
-                alert("Errore nel formato JSON.");
-            }
+                dbLabels = json.Label || []; dbArgomenti = json.Argomento || [];
+                updateDatalists(); renderTable(); showToast("Struttura JSON caricata.");
+            } catch (err) { showToast("Errore nel formato JSON.", "error"); }
         };
         reader.readAsText(file);
     }
 
-    function exportJSON(btn) {
-        if (dbLabels.length === 0 && dbArgomenti.length === 0) {
-            flashButton(btn, "Nessun dato da esportare");
-            return;
-        }
-
-        dbLabels.sort((a, b) => a.localeCompare(b));
-        dbArgomenti.sort((a, b) => a.localeCompare(b));
-
-        const exportObj = {
-            "Argomento": dbArgomenti,
-            "Label": dbLabels
-        };
-
-        const dataStr = JSON.stringify(exportObj, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "argomenti_label_aggiornati.json";
-        document.body.appendChild(a);
-        a.click();
-        
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        flashButton(btn, "JSON Scaricato!");
+    function exportJSON() {
+        const exportObj = { Argomento: dbArgomenti.sort(), Label: dbLabels.sort() };
+        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = "argomenti_label.json"; a.click(); showToast("JSON scaricato!");
     }
 
     function updateDatalists() {
-        const createOptions = arr => arr.map(item => `<option value="${item}">`).join('');
+        dbLabels.sort();
+        dbArgomenti.sort();
         
-        document.getElementById('labels-datalist').innerHTML = createOptions(dbLabels);
-        document.getElementById('args-datalist').innerHTML = createOptions(dbArgomenti);
-
-        const createSelectOptions = arr => arr.map(item => `<option value="${item}">${item}</option>`).join('');
+        const makeSelOpts = arr => arr.map(i => `<option value="${i}">${i}</option>`).join('');
+        document.getElementById('filterLabel').innerHTML = `<option value="ALL">Tutte</option><option value="EMPTY">Nessuna</option>` + makeSelOpts(dbLabels);
+        document.getElementById('filterArgomento').innerHTML = `<option value="ALL">Tutti</option><option value="EMPTY">Nessuno</option>` + makeSelOpts(dbArgomenti);
         
-        document.getElementById('filterLabel').innerHTML = `<option value="ALL">Tutte</option><option value="EMPTY">Nessuna Label</option>` + createSelectOptions(dbLabels);
-        document.getElementById('filterArgomento').innerHTML = `<option value="ALL">Tutti</option><option value="EMPTY">Nessun Argomento</option>` + createSelectOptions(dbArgomenti);
+        document.getElementById('bulkLabel').innerHTML = generateLabelOptions('');
+        document.getElementById('args-datalist').innerHTML = dbArgomenti.map(i => `<option value="${i}">`).join('');
     }
 
-    // --- ASSISTENTE AI EXPORT / IMPORT ---
-    function exportForAI(btn) {
-        if(mainData.length === 0) {
-            flashButton(btn, "Nessun dato da esportare!");
-            return;
-        }
+    function generateLabelOptions(currentValue) {
+        let html = `<option value="">-- Seleziona Label --</option>`;
+        let found = dbLabels.includes(currentValue);
+        if (currentValue && !found) html += `<option value="${currentValue}" selected>${currentValue}</option>`;
         
-        const aiPrompt = "Agisci come un esperto Social Media Data Analyst. Ti ho fornito un elenco di post social nell'array 'dati_da_analizzare'. Ogni oggetto ha un 'id' univoco e un 'copy' (il testo del post). IL TUO COMPITO: Analizza il testo ('copy') di ogni post e classificali in modo logico e ragionato, restituendo un JSON per l'importazione automatica. Istruzioni sui campi da compilare: 1. 'argomento': (Stringa) La macro-categoria tematica (es. Sostenibilità, Educazione Finanziaria, Corporate, Prodotto). Cerca di non frammentare troppo le categorie. 2. 'label': (Stringa) Un tag più specifico o sotto-categoria. 3. 'istituzionale': (Booleano true/false) Imposta a true se il post riguarda comunicazioni corporate di alto livello, bilanci, o parla dei vertici aziendali. REGOLE DI OUTPUT (CRITICHE): Devi restituirmi ESCLUSIVAMENTE un array JSON valido in formato RAW, senza testo introduttivo, senza spiegazioni e senza blocchi di codice Markdown (NON USARE simboli come i backtick o la parola json). Il risultato DEVE essere solo l'array di oggetti con questa esatta struttura: [ { \"id\": ID_ORIGINALE, \"argomento\": \"Nome Argomento\", \"label\": \"Nome Label\", \"istituzionale\": true } ]. NON alterare mai gli id.";
-
-        const aiData = mainData.map(p => ({
-            id: p._id,
-            copy: p.Copy,
-            label: p.Label || "",
-            argomento: p.Argomento || "",
-            istituzionale: p.Istituzionale
-        }));
-        
-        const exportObj = {
-            istruzioni_per_AI: aiPrompt,
-            dati_da_analizzare: aiData
-        };
-
-        const dataStr = JSON.stringify(exportObj, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "da_inviare_alla_AI.json";
-        document.body.appendChild(a);
-        a.click();
-        
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        flashButton(btn, "File Pronto per AI!");
+        dbLabels.forEach(item => {
+            let isSelected = (item === currentValue) ? 'selected' : '';
+            html += `<option value="${item}" ${isSelected}>${item}</option>`;
+        });
+        html += `<option value="___NEW___">➕ Aggiungi nuova...</option>`;
+        return html;
     }
 
-    function importFromAI(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                let jsonString = e.target.result.trim();
-                
-                // Pulizia preventiva: alcune AI restituiscono comunque il blocco markdown nonostante il divieto
-                if (jsonString.startsWith('```json')) {
-                    jsonString = jsonString.replace(/^```json/, '').replace(/```$/, '').trim();
-                } else if (jsonString.startsWith('```')) {
-                    jsonString = jsonString.replace(/^```/, '').replace(/```$/, '').trim();
-                }
-
-                const aiResults = JSON.parse(jsonString);
-                
-                // L'AI potrebbe restituire l'array puro (corretto), oppure ripetere la struttura ad oggetto
-                let resultsArray = Array.isArray(aiResults) ? aiResults : (aiResults.dati_da_analizzare || aiResults.risultati || []);
-
-                if (!Array.isArray(resultsArray) || resultsArray.length === 0) {
-                    alert("Il file non sembra contenere un array valido di risultati. Verifica l'output dell'AI.");
-                    return;
-                }
-
-                let count = 0;
-                resultsArray.forEach(res => {
-                    let post = mainData.find(x => x._id === res.id);
-                    if (post) {
-                        if (res.label !== undefined && res.label !== "") updateRowField(post._id, 'Label', res.label);
-                        if (res.argomento !== undefined && res.argomento !== "") updateRowField(post._id, 'Argomento', res.argomento);
-                        if (res.istituzionale !== undefined) updateRowField(post._id, 'Istituzionale', res.istituzionale);
-                        count++;
-                    }
-                });
-                
-                renderTable();
-                event.target.value = ''; // Reset dell'input
-                flashButton(event.target.parentElement.querySelector('label'), `Aggiornati ${count} post!`);
-            } catch (err) {
-                console.error(err);
-                alert("Errore nel parsing del JSON. Assicurati che l'AI abbia restituito un formato compatibile senza testo aggiuntivo.");
+    function handleLabelChange(id, selectElement) {
+        const val = selectElement.value;
+        if (val === '___NEW___') {
+            let newVal = prompt(`Inserisci una nuova Label:`);
+            if (newVal && newVal.trim() !== '') {
+                newVal = newVal.trim();
+                dbLabels.push(newVal);
+                updateDatalists();
+                updateRowField(id, 'Label', newVal);
             }
-        };
-        reader.readAsText(file);
+            renderTable(); 
+        } else {
+            updateRowField(id, 'Label', val);
+        }
     }
 
-    // --- LOGICA RENDER TABELLA & FILTRI ---
+    // --- AUTOCOMPLETE CUSTOM PER LA TEXTAREA ARGOMENTO ---
+    function filterSugg(textarea, id) {
+        let box = textarea.nextElementSibling;
+        let val = textarea.value.toLowerCase().trim();
+        let matches = dbArgomenti.filter(a => a.toLowerCase().includes(val) || val === '');
+        
+        if (matches.length === 0) { box.style.display = 'none'; return; }
+        
+        box.innerHTML = '';
+        matches.forEach(m => {
+            let div = document.createElement('div');
+            div.textContent = m;
+            div.onclick = function(e) {
+                e.stopPropagation();
+                textarea.value = m;
+                updateRowField(id, 'Argomento', m);
+                box.style.display = 'none';
+            };
+            box.appendChild(div);
+        });
+        box.style.display = 'block';
+    }
+
+    function hideSugg(textarea) {
+        setTimeout(() => {
+            textarea.nextElementSibling.style.display = 'none';
+            let id = parseInt(textarea.getAttribute('data-id'));
+            updateRowField(id, 'Argomento', textarea.value.trim());
+        }, 200);
+    }
+
+    // --- TABELLA E FILTRI ---
+    let debounceTimer;
+    function debouncedRender() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { currentPage = 1; renderTable(); }, 300);
+    }
+
     function renderTable() {
-        const tbody = document.getElementById('tableBody');
+        if(mainData.length === 0) return;
+        
         const searchTxt = document.getElementById('filterCopy').value.toLowerCase();
         const filterL = document.getElementById('filterLabel').value;
         const filterA = document.getElementById('filterArgomento').value;
         const sortMode = document.getElementById('sortSelect').value;
-        const filterMissingBoth = document.getElementById('filterMissingBoth').checked;
+        const filterIncomplete = document.getElementById('filterIncomplete').checked;
 
-        let viewData = mainData.filter(p => {
+        viewData = mainData.filter(p => {
             let okTxt = p.Copy.toLowerCase().includes(searchTxt);
-            let okL = (filterL === "ALL") || (filterL === "EMPTY" && p.Label === "") || (p.Label === filterL);
-            let okA = (filterA === "ALL") || (filterA === "EMPTY" && p.Argomento === "") || (p.Argomento === filterA);
+            let okL = (filterL === "ALL") || (filterL === "EMPTY" && !p.Label) || (p.Label === filterL);
+            let okA = (filterA === "ALL") || (filterA === "EMPTY" && !p.Argomento) || (p.Argomento === filterA);
             
-            let okMissingBoth = true;
-            if (filterMissingBoth) {
-                okMissingBoth = (p.Label === "" && p.Argomento === "");
-            }
-
-            return okTxt && okL && okA && okMissingBoth;
+            let okMissing = filterIncomplete ? (!p.Label || !p.Argomento) : true;
+            
+            return okTxt && okL && okA && okMissing;
         });
 
-        if (sortMode === 'date_desc') {
-            viewData.sort((a, b) => b._timestamp - a._timestamp);
-        } else if (sortMode === 'date_asc') {
-            viewData.sort((a, b) => a._timestamp - b._timestamp);
-        } else if (sortMode === 'similarity') {
-            viewData.sort((a, b) => a.Copy.localeCompare(b.Copy));
-        }
+        // Ordinamento per data
+        if (sortMode === 'date_desc') viewData.sort((a, b) => b._timestamp - a._timestamp);
+        else if (sortMode === 'date_asc') viewData.sort((a, b) => a._timestamp - b._timestamp);
 
-        document.getElementById('postCounter').innerText = `${viewData.length} post visualizzati`;
+        document.getElementById('postCounter').innerText = `${viewData.length} post trovati`;
+        
+        const totalPages = Math.ceil(viewData.length / rowsPerPage) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        
+        document.getElementById('paginationControls').style.display = 'flex';
+        document.getElementById('pageInfo').innerText = `Pag. ${currentPage} di ${totalPages}`;
+        document.getElementById('btnPrev').disabled = currentPage === 1;
+        document.getElementById('btnNext').disabled = currentPage === totalPages;
+
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const paginatedData = viewData.slice(startIdx, startIdx + rowsPerPage);
 
         let html = '';
-        viewData.forEach(p => {
-            const rowClass = p._selected ? "selected" : "";
-            const isChecked = p._selected ? "checked" : "";
-            const isIstChecked = p.Istituzionale ? "checked" : "";
-
-            let dateStr = p.Data;
-            if(p._timestamp) {
-                let d = new Date(p._timestamp);
-                dateStr = d.toLocaleDateString('it-IT') + " " + d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'});
-            }
-
+        paginatedData.forEach(p => {
+            const dateStr = p._timestamp ? new Date(p._timestamp).toLocaleDateString('it-IT') : p.Data;
+            
             html += `
-            <tr class="${rowClass}" onclick="toggleRowSelection(event, ${p._id})">
-                <td class="checkbox-cell" onclick="event.stopPropagation()">
-                    <input type="checkbox" ${isChecked} onchange="toggleSingle(${p._id}, this.checked)">
-                </td>
-                <td style="font-size:12px;">
-                    <a href="${p.Link}" target="_blank" class="link-data" onclick="event.stopPropagation()">${dateStr}</a>
-                </td>
+            <tr class="${p._selected ? 'selected' : ''}" onclick="toggleRowSelection(event, ${p._id})">
+                <td class="checkbox-cell" onclick="event.stopPropagation()"><input type="checkbox" ${p._selected ? 'checked' : ''} onchange="toggleSingle(${p._id}, this.checked)"></td>
+                <td style="font-size:12px;"><a href="${p.Link}" target="_blank" style="color:var(--brand-blue); text-decoration:none;" onclick="event.stopPropagation()">${dateStr}</a></td>
                 <td><span class="badge">${p.Canale}</span></td>
                 <td><div class="truncate" title="${p.Copy.replace(/"/g, '&quot;')}">${p.Copy}</div></td>
+                
                 <td onclick="event.stopPropagation()">
-                    <select onchange="updateRowField(${p._id}, 'Campagna', this.value)" style="width:100%;">
-                        <option value="Editoriale" ${p.Campagna === 'Editoriale' ? 'selected' : ''}>Editoriale</option>
-                        <option value="Campagna" ${p.Campagna === 'Campagna' ? 'selected' : ''}>Campagna</option>
+                    <div class="sugg-container">
+                        <textarea rows="2" data-id="${p._id}" placeholder="Scrivi per cercare..."
+                                  oninput="filterSugg(this, ${p._id})" 
+                                  onfocus="filterSugg(this, ${p._id})" 
+                                  onblur="hideSugg(this)">${p.Argomento}</textarea>
+                        <div class="sugg-box"></div>
+                    </div>
+                </td>
+                
+                <td onclick="event.stopPropagation()">
+                    <select onchange="handleLabelChange(${p._id}, this)">
+                        ${generateLabelOptions(p.Label)}
                     </select>
                 </td>
-                <td onclick="event.stopPropagation()">
-                    <input type="text" list="labels-datalist" value="${p.Label}" placeholder="Label..." onchange="updateRowField(${p._id}, 'Label', this.value)" style="width:100%;">
-                </td>
-                <td onclick="event.stopPropagation()">
-                    <input type="text" list="args-datalist" value="${p.Argomento}" placeholder="Argomento..." onchange="updateRowField(${p._id}, 'Argomento', this.value)" style="width:100%;">
-                </td>
-                <td style="text-align:center;" onclick="event.stopPropagation()">
-                    <input type="checkbox" ${isIstChecked} onchange="updateRowField(${p._id}, 'Istituzionale', this.checked)">
-                </td>
+                
+                <td style="text-align:center;" onclick="event.stopPropagation()"><input type="checkbox" ${p.Istituzionale ? 'checked' : ''} onchange="updateRowField(${p._id}, 'Istituzionale', this.checked)"></td>
             </tr>`;
         });
-
-        tbody.innerHTML = html;
+        
+        if(paginatedData.length === 0) html = `<tr><td colspan="7" class="empty-state"><i class="ph ph-funnel-x"></i><h3>Nessun risultato</h3><p>Modifica i filtri di ricerca.</p></td></tr>`;
+        
+        document.getElementById('tableBody').innerHTML = html;
+        checkBulkActions();
     }
 
-    // --- GESTIONE STATO & SELEZIONI ---
+    function changePage(delta) {
+        currentPage += delta;
+        renderTable();
+        document.querySelector('.table-responsive').scrollTo(0,0);
+    }
+
+    // --- LOGICA DI SELEZIONE E AGGIORNAMENTO DATI ---
     function updateRowField(id, field, value) {
         let post = mainData.find(x => x._id === id);
-        if(post) {
-            post[field] = value;
-            
-            const cleanVal = (typeof value === 'string') ? value.trim() : value;
-            if(field === 'Label' && cleanVal !== '' && !dbLabels.includes(cleanVal)) {
-                dbLabels.push(cleanVal);
-                updateDatalists();
-            }
-            if(field === 'Argomento' && cleanVal !== '' && !dbArgomenti.includes(cleanVal)) {
-                dbArgomenti.push(cleanVal);
-                updateDatalists();
-            }
+        if(post) post[field] = value;
+
+        if(field === 'Argomento' && value !== '' && !dbArgomenti.includes(value)) {
+            dbArgomenti.push(value);
+            updateDatalists();
         }
     }
 
     function toggleRowSelection(e, id) {
-        if(e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'select' || e.target.tagName.toLowerCase() === 'a') return;
+        if(['input','select','textarea','a','button','i'].includes(e.target.tagName.toLowerCase()) || e.target.closest('.sugg-box')) return;
         let post = mainData.find(x => x._id === id);
-        if(post) {
-            post._selected = !post._selected;
-            renderTable();
-        }
+        if(post) { post._selected = !post._selected; renderTable(); }
     }
-
+    
     function toggleSingle(id, isChecked) {
         let post = mainData.find(x => x._id === id);
         if(post) post._selected = isChecked;
-        let tr = document.querySelector(`tr input[onchange="toggleSingle(${id}, this.checked)"]`).closest('tr');
+        checkBulkActions();
+        const tr = document.querySelector(`input[onchange="toggleSingle(${id}, this.checked)"]`).closest('tr');
         if(isChecked) tr.classList.add('selected'); else tr.classList.remove('selected');
     }
 
     function toggleAll(chk) {
-        const isChecked = chk.checked;
-        const searchTxt = document.getElementById('filterCopy').value.toLowerCase();
-        const filterL = document.getElementById('filterLabel').value;
-        const filterA = document.getElementById('filterArgomento').value;
-        const filterMissingBoth = document.getElementById('filterMissingBoth').checked;
-
-        mainData.forEach(p => {
-            let okTxt = p.Copy.toLowerCase().includes(searchTxt);
-            let okL = (filterL === "ALL") || (filterL === "EMPTY" && p.Label === "") || (p.Label === filterL);
-            let okA = (filterA === "ALL") || (filterA === "EMPTY" && p.Argomento === "") || (p.Argomento === filterA);
-            
-            let okMissingBoth = true;
-            if (filterMissingBoth) okMissingBoth = (p.Label === "" && p.Argomento === "");
-
-            if (okTxt && okL && okA && okMissingBoth) {
-                p._selected = isChecked;
-            }
-        });
+        viewData.forEach(p => p._selected = chk.checked);
         renderTable();
     }
 
-    // --- AZIONI MASSIVE ---
-    function applyBulkActions(btn) {
-        const valLabel = document.getElementById('bulkLabel').value.trim();
-        const valArg = document.getElementById('bulkArgomento').value.trim();
-        const valIst = document.getElementById('bulkIstituzionale').value;
-
+    // --- AZIONI MASSIVE (BULK) & CLONAZIONE ---
+    function applyBulkActions() {
+        const a = document.getElementById('bulkArgomento').value.trim();
+        const l = document.getElementById('bulkLabel').value;
+        const i = document.getElementById('bulkIstituzionale').value;
         let count = 0;
+        
         mainData.forEach(p => {
             if(p._selected) {
-                if(valLabel !== "") updateRowField(p._id, 'Label', valLabel);
-                if(valArg !== "") updateRowField(p._id, 'Argomento', valArg);
-                if(valIst !== "") updateRowField(p._id, 'Istituzionale', valIst === "true");
-                p._selected = false;
+                if(a !== "") updateRowField(p._id, 'Argomento', a);
+                if(l && l !== "___NEW___") updateRowField(p._id, 'Label', l);
+                if(i !== "") updateRowField(p._id, 'Istituzionale', i === "true");
+                p._selected = false; count++;
+            }
+        });
+        document.getElementById('bulkArgomento').value = ''; 
+        document.getElementById('bulkLabel').value = ''; 
+        document.getElementById('bulkIstituzionale').value = '';
+        renderTable(); showToast(`Aggiornati ${count} post!`);
+    }
+
+    function cloneToEmpty() {
+        const selected = mainData.filter(p => p._selected);
+        const sourcePost = selected.find(p => p.Argomento || p.Label);
+        if (!sourcePost) return;
+
+        let count = 0;
+        selected.forEach(p => {
+            if (!p.Argomento && !p.Label && p._id !== sourcePost._id) {
+                p.Argomento = sourcePost.Argomento;
+                p.Label = sourcePost.Label;
+                p._selected = false; 
                 count++;
             }
         });
-
-        document.getElementById('selectAll').checked = false;
-        document.getElementById('bulkLabel').value = '';
-        document.getElementById('bulkArgomento').value = '';
-        document.getElementById('bulkIstituzionale').value = '';
         
+        sourcePost._selected = false; 
         renderTable();
-        flashButton(btn, `Applicato a ${count} post!`);
+        showToast(`Dati clonati su ${count} righe vuote!`, "info");
     }
 
-    // --- ESPORTAZIONE EXCEL ---
-    function exportData(btn) {
-        if(mainData.length === 0) {
-            flashButton(btn, "Nessun dato!");
-            return;
-        }
-
-        const monthVal = document.getElementById('monthPicker').value; // YYYY-MM
-        let outMese = "";
-        if(monthVal) {
-            let parts = monthVal.split('-');
-            outMese = `01/${parts[1]}/${parts[0]}`; // gg/mm/aaaa
-        }
-
-        const exportArray = mainData.map(p => {
-            return {
-                "Link": p.Link,
-                "Dettagli Emplifi": p.DettagliEmplifi,
-                "Mese": outMese,
-                "Data": p.Data,
-                "Canale": p.Canale,
-                "Interazioni": p.Interazioni,
-                "Visualizzazioni": p.Visualizzazioni,
-                "Persone raggiunte": p.PersoneRaggiunte,
-                "Click": p.Click,
-                "Like e reazioni": p.LikeReazioni,
-                "Condivisioni": p.Condivisioni,
-                "Commenti": p.Commenti,
-                "Campagna": p.Campagna,
-                "Label": p.Label,
-                "Argomento": p.Argomento,
-                "Copy": p.Copy,
-                "Istituzionale": p.Istituzionale ? 1 : ""
-            };
+    // --- ASSISTENTE AI WORKFLOW ---
+    function copyPromptForAI() {
+        if(mainData.length === 0) { showToast("Nessun dato da inviare!", "error"); return; }
+        const aiPrompt = "Agisci come un esperto Social Media Data Analyst. Ti fornisco un array JSON di post. IL TUO COMPITO: Analizza il 'copy' e restituisci SOLO un array JSON in formato RAW (senza markdown o testo) con { \"id\": ID_ORIGINALE, \"argomento\": \"Nome\", \"label\": \"Nome\", \"istituzionale\": true/false }.\n\nEcco i dati:\n";
+        const aiData = mainData.map(p => ({ id: p._id, copy: p.Copy, label: p.Label, argomento: p.Argomento }));
+        
+        navigator.clipboard.writeText(aiPrompt + JSON.stringify(aiData, null, 2)).then(() => {
+            showToast("Prompt e Dati copiati negli appunti!");
         });
-
-        const worksheet = XLSX.utils.json_to_sheet(exportArray);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Export");
-        XLSX.writeFile(workbook, "Social_Export_Elaborato.xlsx");
-
-        flashButton(btn, "File Scaricato!");
     }
 
-    // --- UTILITIES ---
-    function autoFillMonth() {
-        if(mainData.length > 0 && mainData[0]._timestamp > 0) {
-            let d = new Date(mainData[0]._timestamp);
-            let mm = (d.getMonth() + 1).toString().padStart(2, '0');
-            document.getElementById('monthPicker').value = `${d.getFullYear()}-${mm}`;
+    function importFromAIText() {
+        let text = document.getElementById('aiJsonInput').value.trim();
+        if(!text) return;
+        try {
+            if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
+            else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
+            
+            const results = JSON.parse(text);
+            if (!Array.isArray(results)) throw new Error("Non è un array");
+
+            let count = 0;
+            results.forEach(res => {
+                let p = mainData.find(x => x._id === res.id);
+                if (p) {
+                    if (res.label !== undefined) updateRowField(p._id, 'Label', res.label);
+                    if (res.argomento !== undefined) updateRowField(p._id, 'Argomento', res.argomento);
+                    if (res.istituzionale !== undefined) updateRowField(p._id, 'Istituzionale', res.istituzionale);
+                    count++;
+                }
+            });
+            
+            mainData.forEach(p => {
+                if (p.Label && !dbLabels.includes(p.Label)) dbLabels.push(p.Label);
+                if (p.Argomento && !dbArgomenti.includes(p.Argomento)) dbArgomenti.push(p.Argomento);
+            });
+            updateDatalists();
+
+            document.getElementById('aiJsonInput').value = '';
+            renderTable(); showToast(`Importazione AI: ${count} post aggiornati!`, "success");
+            switchTab('tab-workspace');
+        } catch (err) {
+            showToast("Errore di parsing. Assicurati che sia un JSON valido.", "error");
         }
     }
 
-    function flashButton(el, text) {
-        const originalText = el.innerText;
-        el.innerText = text;
-        setTimeout(() => {
-            el.innerText = originalText;
-        }, 2000);
+    // --- EXPORT ---
+    function exportData() {
+        if(mainData.length === 0) { showToast("Nessun dato!", "error"); return; }
+        const monthVal = document.getElementById('monthPicker').value;
+        let outMese = monthVal ? `01/${monthVal.split('-')[1]}/${monthVal.split('-')[0]}` : "";
+
+        const exportArray = mainData.map(p => ({
+            "Link": p.Link, "Dettagli Emplifi": p.DettagliEmplifi, "Mese": outMese, "Data": p.Data, "Canale": p.Canale,
+            "Interazioni": p.Interazioni, "Visualizzazioni": p.Visualizzazioni, "Campagna": p.Campagna,
+            "Label": p.Label, "Argomento": p.Argomento, "Copy": p.Copy, "Istituzionale": p.Istituzionale ? 1 : ""
+        }));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportArray), "Export");
+        XLSX.writeFile(wb, "Social_Export_Elaborato.xlsx");
+        showToast("File Excel generato!");
     }
 </script>
 </body>
