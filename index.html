@@ -371,7 +371,6 @@
 
         mainData.forEach(p => {
             let text = p.Copy.toLowerCase().replace(/tg poste/g, '');
-            // Estrae tutte le parole in sequenza per poter controllare le coppie
             let rawWords = text.match(/[a-zàèéìòù#0-9_]+/g) || [];
             
             for (let i = 0; i < rawWords.length; i++) {
@@ -379,7 +378,6 @@
                 let isValid1 = w1.startsWith('#') || (w1.length >= 4 && !stopWords.includes(w1));
                 
                 if (isValid1) {
-                    // Controlla la parola successiva per formare il blocco da due (bigramma)
                     if (i < rawWords.length - 1) {
                         let w2 = rawWords[i + 1];
                         let isValid2 = w2.startsWith('#') || (w2.length >= 4 && !stopWords.includes(w2));
@@ -471,7 +469,13 @@
                 _timestamp: new Date(row["Orario di pubblicazione"]).getTime() || 0,
                 Link: row.Permalink || "", DettagliEmplifi: "", Mese: "", 
                 Data: row["Orario di pubblicazione"] || "", Canale: canaleFinale,
-                Interazioni: row["Reazioni, commenti e condivisioni"] || "0", Visualizzazioni: row.Visualizzazioni || "0",
+                Interazioni: row["Reazioni, commenti e condivisioni"] || "0", 
+                Visualizzazioni: row.Visualizzazioni || "0",
+                PersoneRaggiunte: row["Copertura"] || "0",
+                Click: row["Clic totali"] || "0",
+                LikeReazioni: row["Reazioni"] || "0",
+                Condivisioni: row["Condivisioni"] || "0",
+                Commenti: row["Commenti"] || "0",
                 Campagna: "Editoriale", Label: "", Argomento: "", Copy: copyText,
                 Istituzionale: regexIstituzionale.test(copyText)
             };
@@ -488,6 +492,11 @@
             Link: row.Link || "", DettagliEmplifi: row["Dettagli Emplifi"] || "", Mese: row.Mese || "",
             Data: row.Data || "", Canale: row.Canale || "",
             Interazioni: row.Interazioni || "0", Visualizzazioni: row.Visualizzazioni || "0",
+            PersoneRaggiunte: row["Persone raggiunte"] || "0",
+            Click: row["Click"] || "0",
+            LikeReazioni: row["Like e reazioni"] || "0",
+            Condivisioni: row.Condivisioni || "0",
+            Commenti: row.Commenti || "0",
             Campagna: row.Campagna || "Editoriale", Label: row.Label || "", Argomento: row.Argomento || "",
             Copy: row.Copy || "", Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === "true" || row.Istituzionale === true)
         }));
@@ -632,7 +641,6 @@
             return okTxt && okL && okA && okMissing;
         });
 
-        // Ordinamento per data
         if (sortMode === 'date_desc') viewData.sort((a, b) => b._timestamp - a._timestamp);
         else if (sortMode === 'date_asc') viewData.sort((a, b) => a._timestamp - b._timestamp);
 
@@ -816,9 +824,23 @@
         let outMese = monthVal ? `01/${monthVal.split('-')[1]}/${monthVal.split('-')[0]}` : "";
 
         const exportArray = mainData.map(p => ({
-            "Link": p.Link, "Dettagli Emplifi": p.DettagliEmplifi, "Mese": outMese, "Data": p.Data, "Canale": p.Canale,
-            "Interazioni": p.Interazioni, "Visualizzazioni": p.Visualizzazioni, "Campagna": p.Campagna,
-            "Label": p.Label, "Argomento": p.Argomento, "Copy": p.Copy, "Istituzionale": p.Istituzionale ? 1 : ""
+            "Link": p.Link, 
+            "Dettagli Emplifi": p.DettagliEmplifi, 
+            "Mese": outMese, 
+            "Data": p.Data, 
+            "Canale": p.Canale,
+            "Interazioni": p.Interazioni, 
+            "Visualizzazioni": p.Visualizzazioni, 
+            "Persone raggiunte": p.PersoneRaggiunte,
+            "Click": p.Click,
+            "Like e reazioni": p.LikeReazioni,
+            "Condivisioni": p.Condivisioni,
+            "Commenti": p.Commenti,
+            "Campagna": p.Campagna,
+            "Label": p.Label, 
+            "Argomento": p.Argomento, 
+            "Copy": p.Copy, 
+            "Istituzionale": p.Istituzionale ? 1 : ""
         }));
 
         const wb = XLSX.utils.book_new();
