@@ -322,7 +322,8 @@
                     <input type="text" list="labels-datalist" id="newRuleLabel" placeholder="es. Prodotto">
                 </div>
                 <div class="form-group" style="display: flex; flex-direction: row; gap: 8px;">
-                    <button class="btn-primary" onclick="addAutoRule()" style="flex: 1;"><i class="ph ph-plus"></i> Aggiungi</button>
+                    <button class="btn-primary" onclick="addAutoRule()" id="btnAddRule" style="flex: 1;"><i class="ph ph-plus"></i> Aggiungi</button>
+                    <button class="btn-outline" onclick="cancelEditRule()" id="btnCancelEdit" style="display: none; flex: 0.5;"><i class="ph ph-x"></i> Annulla</button>
                     <button class="btn-light-blue" onclick="applyAutoRulesToExisting()" style="flex: 1;" title="Applica regole ai post senza tag"><i class="ph ph-magic-wand"></i> Applica Ora</button>
                 </div>
             </div>
@@ -358,6 +359,7 @@
     let dbArgomenti = [];
     let autoRules = [];
     let currentPage = 1;
+    let editingRuleId = null;
     const rowsPerPage = 50;
     
     // Variabili per l'ordinamento
@@ -372,7 +374,7 @@
         document.getElementById(tabId).classList.add('active');
         event.currentTarget.classList.add('active');
         if(tabId === 'tab-workspace' && mainData.length > 0) renderTable();
-        if(tabId === 'tab-autolabel') renderAutoRules();
+        if(tabId === 'tab-autolabel') { renderAutoRules(); cancelEditRule(); }
     }
 
     function showToast(message, type = 'success') {
@@ -441,16 +443,57 @@
         const lbl = document.getElementById('newRuleLabel').value.trim();
         if(!kw) { showToast("Inserisci almeno una parola chiave", "error"); return; }
         
-        autoRules.push({ id: Date.now(), keywords: kw, argomento: arg, label: lbl });
+        if (editingRuleId) {
+            let rule = autoRules.find(r => r.id === editingRuleId);
+            if (rule) {
+                rule.keywords = kw;
+                rule.argomento = arg;
+                rule.label = lbl;
+            }
+            editingRuleId = null;
+            document.getElementById('btnAddRule').innerHTML = '<i class="ph ph-plus"></i> Aggiungi';
+            document.getElementById('btnCancelEdit').style.display = 'none';
+            showToast("Regola modificata!");
+        } else {
+            autoRules.push({ id: Date.now(), keywords: kw, argomento: arg, label: lbl });
+            showToast("Regola aggiunta!");
+        }
+        
         document.getElementById('newRuleKeywords').value = '';
         document.getElementById('newRuleArgomento').value = '';
         document.getElementById('newRuleLabel').value = '';
         renderAutoRules();
-        showToast("Regola aggiunta!");
+    }
+
+    function editAutoRule(id) {
+        let rule = autoRules.find(r => r.id === id);
+        if (!rule) return;
+        
+        editingRuleId = id;
+        document.getElementById('newRuleKeywords').value = rule.keywords;
+        document.getElementById('newRuleArgomento').value = rule.argomento || '';
+        document.getElementById('newRuleLabel').value = rule.label || '';
+        
+        document.getElementById('btnAddRule').innerHTML = '<i class="ph ph-floppy-disk"></i> Salva';
+        document.getElementById('btnCancelEdit').style.display = 'inline-flex';
+        document.getElementById('newRuleKeywords').focus();
+        renderAutoRules();
+    }
+
+    function cancelEditRule() {
+        editingRuleId = null;
+        document.getElementById('newRuleKeywords').value = '';
+        document.getElementById('newRuleArgomento').value = '';
+        document.getElementById('newRuleLabel').value = '';
+        
+        document.getElementById('btnAddRule').innerHTML = '<i class="ph ph-plus"></i> Aggiungi';
+        document.getElementById('btnCancelEdit').style.display = 'none';
+        renderAutoRules();
     }
 
     function removeAutoRule(id) {
         autoRules = autoRules.filter(r => r.id !== id);
+        if(editingRuleId === id) cancelEditRule();
         renderAutoRules();
     }
 
@@ -461,11 +504,14 @@
             return;
         }
         tbody.innerHTML = autoRules.map(r => `
-            <tr>
+            <tr ${editingRuleId === r.id ? 'style="background-color: var(--brand-blue-light);"' : ''}>
                 <td><strong>${r.keywords}</strong></td>
                 <td>${r.argomento || '-'}</td>
                 <td><span class="badge">${r.label || '-'}</span></td>
-                <td style="text-align:center;"><button class="btn-outline" style="padding: 6px; color: #ff3b30;" onclick="removeAutoRule(${r.id})"><i class="ph ph-trash"></i></button></td>
+                <td style="text-align:center; min-width: 90px;">
+                    <button class="btn-outline" style="padding: 6px; color: var(--brand-blue); margin-right: 4px;" onclick="editAutoRule(${r.id})" title="Modifica"><i class="ph ph-pencil-simple"></i></button>
+                    <button class="btn-outline" style="padding: 6px; color: #ff3b30;" onclick="removeAutoRule(${r.id})" title="Elimina"><i class="ph ph-trash"></i></button>
+                </td>
             </tr>
         `).join('');
     }
