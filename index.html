@@ -153,7 +153,6 @@
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tab-import')"><i class="ph ph-folder-open"></i> 1. Importa & Database</button>
         <button class="tab-btn" onclick="switchTab('tab-workspace')"><i class="ph ph-table"></i> 2. Area di Lavoro</button>
-        <button class="tab-btn" onclick="switchTab('tab-ai')"><i class="ph ph-robot"></i> 3. Assistente AI</button>
     </div>
 
     <div id="tab-import" class="tab-content active">
@@ -204,16 +203,9 @@
                     <label for="filterArgomento">Filtra Argomento</label>
                     <select id="filterArgomento" onchange="renderTable()"><option value="ALL">Tutti</option><option value="EMPTY">Nessun Argomento</option></select>
                 </div>
-                <div class="form-group">
-                    <label for="sortSelect">Ordinamento</label>
-                    <select id="sortSelect" onchange="renderTable()">
-                        <option value="date_desc">Più recenti prima</option>
-                        <option value="date_asc">Più vecchi prima</option>
-                    </select>
-                </div>
                 
                 <div id="frequentTermsContainer" class="form-group" style="grid-column: 1 / -1; display: none; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
-                    </div>
+                </div>
                 
             </div>
             <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--border-color);">
@@ -221,6 +213,27 @@
                     <input type="checkbox" id="filterIncomplete" onchange="renderTable()"> 
                     Mostra post <strong>DA COMPLETARE</strong> (manca Label o Argomento)
                 </label>
+            </div>
+        </div>
+
+        <div id="topDashboard" style="display:none; margin-bottom: 16px;">
+            <div id="duplicateWarning" style="display:none; background:#fff3cd; color:#856404; padding:12px 16px; border-radius:8px; border:1px solid #ffeeba; margin-bottom:12px; align-items:center; justify-content:space-between; box-shadow: var(--shadow);">
+                <div style="display:flex; align-items:center; gap:8px; font-weight:600;">
+                    <i class="ph ph-warning-circle" style="font-size:20px;"></i>
+                    <span id="dupCount"></span>
+                </div>
+                <button onclick="this.parentElement.style.display='none'" style="background:transparent; border:none; color:#856404; cursor:pointer; font-size:16px;"><i class="ph ph-x-circle"></i></button>
+            </div>
+            
+            <div id="summaryStats" style="display:flex; gap:16px; flex-wrap:wrap;">
+                <div style="flex:1; min-width: 250px; background:var(--bg-surface); padding:16px; border-radius:8px; border:1px solid var(--border-color); box-shadow: var(--shadow);">
+                    <h4 style="margin-bottom:12px; font-size:14px; color:var(--brand-blue); display:flex; align-items:center; gap:6px;"><i class="ph ph-chart-bar"></i> Post per Canale</h4>
+                    <div id="statsCanale" style="font-size:13px; display:flex; flex-direction:column; gap:6px;"></div>
+                </div>
+                <div style="flex:1; min-width: 250px; background:var(--bg-surface); padding:16px; border-radius:8px; border:1px solid var(--border-color); box-shadow: var(--shadow);">
+                    <h4 style="margin-bottom:12px; font-size:14px; color:var(--brand-blue); display:flex; align-items:center; gap:6px;"><i class="ph ph-tag"></i> Post per Label</h4>
+                    <div id="statsLabel" style="font-size:13px; display:flex; flex-direction:column; gap:6px; max-height: 150px; overflow-y: auto; padding-right: 8px;"></div>
+                </div>
             </div>
         </div>
 
@@ -255,12 +268,12 @@
                     <thead>
                         <tr>
                             <th class="checkbox-cell" style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleAll(this)"></th>
-                            <th style="width: 90px;">Data</th>
-                            <th style="width: 120px;">Canale</th>
-                            <th style="width: auto;">Copy</th>
-                            <th style="width: 280px;">Argomento (Testo Libero)</th>
-                            <th style="width: 200px;">Label</th>
-                            <th style="width: 60px; text-align:center;">Ist.</th>
+                            <th style="width: 90px; cursor:pointer;" onclick="handleSort('Data')">Data <span id="sort-Data">▼</span></th>
+                            <th style="width: 120px; cursor:pointer;" onclick="handleSort('Canale')">Canale <span id="sort-Canale"></span></th>
+                            <th style="width: auto; cursor:pointer;" onclick="handleSort('Copy')">Copy <span id="sort-Copy"></span></th>
+                            <th style="width: 280px; cursor:pointer;" onclick="handleSort('Argomento')">Argomento (Testo Libero) <span id="sort-Argomento"></span></th>
+                            <th style="width: 200px; cursor:pointer;" onclick="handleSort('Label')">Label <span id="sort-Label"></span></th>
+                            <th style="width: 60px; text-align:center; cursor:pointer;" onclick="handleSort('Istituzionale')">Ist. <span id="sort-Istituzionale"></span></th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -285,27 +298,6 @@
             </div>
         </div>
     </div>
-
-    <div id="tab-ai" class="tab-content">
-        <div class="card">
-            <div class="card-title"><i class="ph ph-robot"></i> Classificazione Automatica con AI</div>
-            <p style="margin-bottom: 16px; color: var(--text-light); line-height: 1.5;">
-                Invece di scaricare file, ora puoi copiare direttamente i dati e il prompt negli appunti. Incollali su ChatGPT o Claude, poi incolla la loro risposta (il JSON RAW) nel riquadro sottostante per aggiornare automaticamente la tabella.
-            </p>
-            <div class="grid-layout">
-                <div class="form-group" style="background: var(--bg-body); padding: 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
-                    <h4 style="margin-bottom: 8px;">1. Esporta per l'AI</h4>
-                    <p style="font-size: 12px; margin-bottom: 12px; color: var(--text-light);">Genera il prompt e i post attuali da inviare all'intelligenza artificiale.</p>
-                    <button class="btn-primary" onclick="copyPromptForAI()"><i class="ph ph-copy"></i> Copia Prompt & Dati negli appunti</button>
-                </div>
-                <div class="form-group" style="background: var(--bg-body); padding: 16px; border-radius: 8px; border: 1px dashed var(--border-color);">
-                    <h4 style="margin-bottom: 8px;">2. Importa risposta AI</h4>
-                    <textarea id="aiJsonInput" rows="4" placeholder="Incolla qui l'array JSON restituito dall'AI (es. [{id: 1, argomento: '...'}])"></textarea>
-                    <button class="btn-yellow" onclick="importFromAIText()" style="margin-top: 8px;"><i class="ph ph-download-simple"></i> Aggiorna Tabella</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <datalist id="args-datalist"></datalist>
@@ -319,6 +311,11 @@
     let dbArgomenti = [];
     let currentPage = 1;
     const rowsPerPage = 50;
+    
+    // Variabili per l'ordinamento
+    let sortCol = 'Data';
+    let sortAsc = false;
+    let duplicateCount = 0;
 
     // --- UTILITIES UI ---
     function switchTab(tabId) {
@@ -359,6 +356,35 @@
             panel.classList.remove('visible');
             document.getElementById('selectAll').checked = false;
         }
+    }
+
+    function updateDashboard() {
+        if(mainData.length === 0) {
+            document.getElementById('topDashboard').style.display = 'none';
+            return;
+        }
+        document.getElementById('topDashboard').style.display = 'block';
+        
+        let canali = {}, labels = {};
+        mainData.forEach(p => {
+            canali[p.Canale] = (canali[p.Canale] || 0) + 1;
+            let l = p.Label || 'Nessuna Label';
+            labels[l] = (labels[l] || 0) + 1;
+        });
+        
+        // Ordina e renderizza Canali
+        let htmlCanali = Object.entries(canali)
+            .sort((a,b) => b[1] - a[1])
+            .map(([k,v]) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--bg-body); padding-bottom:4px;"><span>${k}</span><strong style="color:var(--brand-blue);">${v}</strong></div>`)
+            .join('');
+        document.getElementById('statsCanale').innerHTML = htmlCanali;
+
+        // Ordina e renderizza Label
+        let htmlLabels = Object.entries(labels)
+            .sort((a,b) => b[1] - a[1])
+            .map(([k,v]) => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--bg-body); padding-bottom:4px;"><span>${k}</span><strong style="color:var(--brand-blue);">${v}</strong></div>`)
+            .join('');
+        document.getElementById('statsLabel').innerHTML = htmlLabels;
     }
 
     // --- GENERAZIONE TERMINI FREQUENTI ---
@@ -468,45 +494,35 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // Funzione centralizzata per l'importazione additiva e l'aggiornamento (merge) dei duplicati
     function mergeIncomingData(newRecords) {
-        // Rimuovi dal DB esistente eventuali record di X con link non definito
-        mainData = mainData.filter(p => p.Link !== 'https://x.com/PosteItaliane/status/undefined');
-
         let maxId = mainData.length > 0 ? Math.max(...mainData.map(p => p._id)) : -1;
-        let duplicateCount = 0;
+        let newDupesCount = 0;
         
         newRecords.forEach(newRow => {
-            // Evita di importare nuovi record di X con link non definito
-            if (newRow.Link === 'https://x.com/PosteItaliane/status/undefined') {
-                return;
-            }
-
             let existingIdx = mainData.findIndex(p => p.Link && newRow.Link && p.Link === newRow.Link);
             
             if (existingIdx !== -1) {
-                // Record duplicato trovato: mantengo l'ID, Label, Argomento e Campagna preesistenti, aggiorno le metriche
                 const oldRow = mainData[existingIdx];
                 newRow._id = oldRow._id;
                 newRow.Argomento = oldRow.Argomento || newRow.Argomento;
                 newRow.Label = oldRow.Label || newRow.Label;
                 newRow.Campagna = oldRow.Campagna || newRow.Campagna;
                 mainData[existingIdx] = newRow;
-                duplicateCount++;
+                newDupesCount++;
             } else {
-                // Nuovo record
                 maxId++;
                 newRow._id = maxId;
                 mainData.push(newRow);
             }
         });
 
-        // Feedback visivo per i record doppi gestiti
-        if (duplicateCount > 0) {
-            setTimeout(() => {
-                showToast(`Importazione additiva: uniti e aggiornati ${duplicateCount} record duplicati!`, "info");
-            }, 300);
+        if (newDupesCount > 0) {
+            duplicateCount += newDupesCount;
+            const warnDiv = document.getElementById('duplicateWarning');
+            warnDiv.style.display = 'flex';
+            document.getElementById('dupCount').innerText = `${duplicateCount} post già presenti sono stati aggiornati con le metriche più recenti (mantenendo le tue Label/Argomenti).`;
         }
+        updateDashboard();
     }
 
     function processRawData(data, sourceType) {
@@ -558,11 +574,18 @@
                 } catch(e) {}
             }
 
+            let timestamp = new Date(dataStr).getTime() || 0;
+            let formattedDate = dataStr;
+            if (timestamp > 0) {
+                let d = new Date(timestamp);
+                formattedDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            }
+
             return {
                 _id: index, _selected: false,
-                _timestamp: new Date(dataStr).getTime() || 0,
+                _timestamp: timestamp,
                 Link: linkStr, DettagliEmplifi: "", Mese: "", 
-                Data: dataStr, Canale: canaleFinale,
+                Data: formattedDate, Canale: canaleFinale,
                 Interazioni: interazioni, 
                 Visualizzazioni: visualizzazioni,
                 PersoneRaggiunte: persone,
@@ -582,20 +605,35 @@
     }
 
     function processExcelData(data) {
-        let parsedRecords = data.map((row, index) => ({
-            _id: index, _selected: false,
-            _timestamp: new Date(row.Data).getTime() || 0,
-            Link: row.Link || "", DettagliEmplifi: row["Dettagli Emplifi"] || "", Mese: row.Mese || "",
-            Data: row.Data || "", Canale: row.Canale || "",
-            Interazioni: row.Interazioni || "0", Visualizzazioni: row.Visualizzazioni || "0",
-            PersoneRaggiunte: row["Persone raggiunte"] || "0",
-            Click: row["Click"] || "0",
-            LikeReazioni: row["Like e reazioni"] || "0",
-            Condivisioni: row.Condivisioni || "0",
-            Commenti: row.Commenti || "0",
-            Campagna: row.Campagna || "Editoriale", Label: row.Label || "", Argomento: row.Argomento || "",
-            Copy: row.Copy || "", Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === "true" || row.Istituzionale === true)
-        }));
+        let parsedRecords = data.map((row, index) => {
+            let timestamp = 0;
+            let formattedDate = row.Data || "";
+            
+            // Prova a ricavare un timestamp valido se è gg/mm/aaaa
+            if(formattedDate && formattedDate.includes('/')) {
+                let parts = formattedDate.split('/');
+                if(parts.length === 3) {
+                    timestamp = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                }
+            } else {
+                timestamp = new Date(formattedDate).getTime() || 0;
+            }
+
+            return {
+                _id: index, _selected: false,
+                _timestamp: timestamp,
+                Link: row.Link || "", DettagliEmplifi: row["Dettagli Emplifi"] || "", Mese: row.Mese || "",
+                Data: formattedDate, Canale: row.Canale || "",
+                Interazioni: row.Interazioni || "0", Visualizzazioni: row.Visualizzazioni || "0",
+                PersoneRaggiunte: row["Persone raggiunte"] || "0",
+                Click: row["Click"] || "0",
+                LikeReazioni: row["Like e reazioni"] || "0",
+                Condivisioni: row.Condivisioni || "0",
+                Commenti: row.Commenti || "0",
+                Campagna: row.Campagna || "Editoriale", Label: row.Label || "", Argomento: row.Argomento || "",
+                Copy: row.Copy || "", Istituzionale: (row.Istituzionale == 1 || row.Istituzionale === "true" || row.Istituzionale === true)
+            };
+        });
         
         mergeIncomingData(parsedRecords);
 
@@ -714,7 +752,24 @@
         }, 200);
     }
 
-    // --- TABELLA E FILTRI ---
+    // --- ORDINAMENTO E TABELLA ---
+    function handleSort(col) {
+        if (sortCol === col) {
+            sortAsc = !sortAsc;
+        } else {
+            sortCol = col;
+            sortAsc = true;
+        }
+        
+        // Reset indicatori UI
+        ['Data', 'Canale', 'Copy', 'Argomento', 'Label', 'Istituzionale'].forEach(c => {
+            document.getElementById('sort-' + c).innerHTML = '';
+        });
+        document.getElementById('sort-' + sortCol).innerHTML = sortAsc ? ' ▲' : ' ▼';
+        
+        renderTable();
+    }
+
     let debounceTimer;
     function debouncedRender() {
         clearTimeout(debounceTimer);
@@ -727,7 +782,6 @@
         const searchTxt = document.getElementById('filterCopy').value.toLowerCase();
         const filterL = document.getElementById('filterLabel').value;
         const filterA = document.getElementById('filterArgomento').value;
-        const sortMode = document.getElementById('sortSelect').value;
         const filterIncomplete = document.getElementById('filterIncomplete').checked;
 
         viewData = mainData.filter(p => {
@@ -740,8 +794,26 @@
             return okTxt && okL && okA && okMissing;
         });
 
-        if (sortMode === 'date_desc') viewData.sort((a, b) => b._timestamp - a._timestamp);
-        else if (sortMode === 'date_asc') viewData.sort((a, b) => a._timestamp - b._timestamp);
+        // Ordinamento Custom
+        viewData.sort((a, b) => {
+            let valA = a[sortCol];
+            let valB = b[sortCol];
+            
+            if (sortCol === 'Data') {
+                valA = a._timestamp;
+                valB = b._timestamp;
+            } else if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            } else if (typeof valA === 'boolean') {
+                valA = valA ? 1 : 0;
+                valB = valB ? 1 : 0;
+            }
+            
+            if(valA < valB) return sortAsc ? -1 : 1;
+            if(valA > valB) return sortAsc ? 1 : -1;
+            return 0;
+        });
 
         document.getElementById('postCounter').innerText = `${viewData.length} post trovati`;
         
@@ -758,12 +830,10 @@
 
         let html = '';
         paginatedData.forEach(p => {
-            const dateStr = p._timestamp ? new Date(p._timestamp).toLocaleDateString('it-IT') : p.Data;
-            
             html += `
             <tr class="${p._selected ? 'selected' : ''}" onclick="toggleRowSelection(event, ${p._id})">
                 <td class="checkbox-cell" onclick="event.stopPropagation()"><input type="checkbox" ${p._selected ? 'checked' : ''} onchange="toggleSingle(${p._id}, this.checked)"></td>
-                <td style="font-size:12px;"><a href="${p.Link}" target="_blank" style="color:var(--brand-blue); text-decoration:none;" onclick="event.stopPropagation()">${dateStr}</a></td>
+                <td style="font-size:12px;"><a href="${p.Link}" target="_blank" style="color:var(--brand-blue); text-decoration:none;" onclick="event.stopPropagation()">${p.Data}</a></td>
                 <td><span class="badge">${p.Canale}</span></td>
                 <td><div class="truncate" title="${p.Copy.replace(/"/g, '&quot;')}">${p.Copy}</div></td>
                 
@@ -808,6 +878,10 @@
             dbArgomenti.push(value);
             updateDatalists();
         }
+        
+        if(field === 'Label') {
+            updateDashboard();
+        }
     }
 
     function toggleRowSelection(e, id) {
@@ -847,7 +921,7 @@
         document.getElementById('bulkArgomento').value = ''; 
         document.getElementById('bulkLabel').value = ''; 
         document.getElementById('bulkIstituzionale').value = '';
-        renderTable(); showToast(`Aggiornati ${count} post!`);
+        renderTable(); updateDashboard(); showToast(`Aggiornati ${count} post!`);
     }
 
     function cloneToEmpty() {
@@ -867,53 +941,8 @@
         
         sourcePost._selected = false; 
         renderTable();
+        updateDashboard();
         showToast(`Dati clonati su ${count} righe vuote!`, "info");
-    }
-
-    // --- ASSISTENTE AI WORKFLOW ---
-    function copyPromptForAI() {
-        if(mainData.length === 0) { showToast("Nessun dato da inviare!", "error"); return; }
-        const aiPrompt = "Agisci come un esperto Social Media Data Analyst. Ti fornisco un array JSON di post. IL TUO COMPITO: Analizza il 'copy' e restituisci SOLO un array JSON in formato RAW (senza markdown o testo) con { \"id\": ID_ORIGINALE, \"argomento\": \"Nome\", \"label\": \"Nome\", \"istituzionale\": true/false }.\n\nEcco i dati:\n";
-        const aiData = mainData.map(p => ({ id: p._id, copy: p.Copy, label: p.Label, argomento: p.Argomento }));
-        
-        navigator.clipboard.writeText(aiPrompt + JSON.stringify(aiData, null, 2)).then(() => {
-            showToast("Prompt e Dati copiati negli appunti!");
-        });
-    }
-
-    function importFromAIText() {
-        let text = document.getElementById('aiJsonInput').value.trim();
-        if(!text) return;
-        try {
-            if (text.startsWith('```json')) text = text.replace(/^```json/, '').replace(/```$/, '').trim();
-            else if (text.startsWith('```')) text = text.replace(/^```/, '').replace(/```$/, '').trim();
-            
-            const results = JSON.parse(text);
-            if (!Array.isArray(results)) throw new Error("Non è un array");
-
-            let count = 0;
-            results.forEach(res => {
-                let p = mainData.find(x => x._id === res.id);
-                if (p) {
-                    if (res.label !== undefined) updateRowField(p._id, 'Label', res.label);
-                    if (res.argomento !== undefined) updateRowField(p._id, 'Argomento', res.argomento);
-                    if (res.istituzionale !== undefined) updateRowField(p._id, 'Istituzionale', res.istituzionale);
-                    count++;
-                }
-            });
-            
-            mainData.forEach(p => {
-                if (p.Label && !dbLabels.includes(p.Label)) dbLabels.push(p.Label);
-                if (p.Argomento && !dbArgomenti.includes(p.Argomento)) dbArgomenti.push(p.Argomento);
-            });
-            updateDatalists();
-
-            document.getElementById('aiJsonInput').value = '';
-            renderTable(); showToast(`Importazione AI: ${count} post aggiornati!`, "success");
-            switchTab('tab-workspace');
-        } catch (err) {
-            showToast("Errore di parsing. Assicurati che sia un JSON valido.", "error");
-        }
     }
 
     // --- EXPORT ---
